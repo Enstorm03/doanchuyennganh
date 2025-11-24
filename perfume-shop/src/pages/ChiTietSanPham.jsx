@@ -103,7 +103,7 @@ const ProductDetail = () => {
               </div>
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-primary">verified_user</span>
-                <span className="text-sm font-medium">Chính hãngs 100%</span>
+                <span className="text-sm font-medium">Chính hãng 100%</span>
               </div>
             </div>
           </div>
