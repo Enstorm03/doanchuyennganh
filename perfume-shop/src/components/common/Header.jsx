@@ -13,7 +13,7 @@ const Header = ({ brandName = "PerfumeStore" }) => {
         <div className="hidden lg:flex items-center gap-9">
           <Link className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" to="/">Trang Chu</Link>
           <Link className="text-sm font-medium leading-normal text-primary dark:text-primary" to="/category">San Pham</Link>
-          <a className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" href="#">Thuong Hieu</a>
+          <Link className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" to="/brands">Thuong Hieu</Link>
           <a className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" href="#">Blog</a>
         </div>
       </div>

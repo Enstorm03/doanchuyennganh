@@ -32,6 +32,10 @@ const AdminSidebar = () => {
               <span className="material-symbols-outlined">receipt_long</span>
               Đơn hàng
             </NavLink>
+            <NavLink to="/admin/reports" className={navLinkClasses}>
+              <span className="material-symbols-outlined">monitoring</span>
+              Báo cáo
+            </NavLink>
           </nav>
         </div>
       </div>
