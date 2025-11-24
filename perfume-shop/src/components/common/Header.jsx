@@ -32,7 +32,9 @@ const Header = ({ brandName = "PerfumeStore" }) => {
         <Link to="/cart" className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-background-light dark:bg-background-dark gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5 hover:bg-primary/10 transition-colors">
           <span className="material-symbols-outlined">shopping_bag</span>
         </Link>
-        <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBACtAcXKBlULVbyR6ZZHiCzxUaOZhK1qBtm8OGSPBE_vMLVNb2rqE2hZpVZNOJs6DBg_y0-le1eQGVGG86I8r2MgAIsFJ6OU6Gf8j17rNSt15LBNC80_NV04MXKsrrh9hoDag91qTlAZB_gJ4tignFbD2ppFKf0pEgFEUPxI5l2gA2u_G6aW1qwJnNTsdpIBlvC8TMscAwmnfR218XQZ3K7iT-aWYmRz5Aolr-d1NNNr-kwPdW1QbYcd0qIQneNG2LOpnpyFspF4k')" }}></div>
+        <Link to="/login" className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-background-light dark:bg-background-dark gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5 hover:bg-primary/10 transition-colors">
+          <span className="material-symbols-outlined">person</span>
+        </Link>
       </div>
     </header>
   );
