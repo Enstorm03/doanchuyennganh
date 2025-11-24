@@ -1,27 +1,27 @@
 import { Routes, Route } from 'react-router-dom';
 
 // Layouts
-import PublicLayout from './PublicLayout';
-import AdminLayout from './AdminLayout';
+import PublicLayout from './layouts/PublicLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 // Public Pages
-import HomePage from './pages/TrangChu';
-import ProductDetail from './pages/ChiTietSanPham';
-import CategoryPage from './pages/DanhMucSanPham';
-import GioHangPage from './pages/GioHang';
-import ThanhToanPage from './pages/ThanhToan';
-import ThuongHieuPage from './pages/ThuongHieuPage';
+import HomePage from './pages/public/TrangChu';
+import ProductDetail from './pages/public/ChiTietSanPham';
+import CategoryPage from './pages/public/DanhMucSanPham';
+import GioHangPage from './pages/public/GioHang';
+import ThanhToanPage from './pages/public/ThanhToan';
+import ThuongHieuPage from './pages/public/ThuongHieuPage';
 
 // Auth Pages
-import DangNhapPage from './pages/DangNhapPage';
-import DangKyPage from './pages/DangKyPage';
+import DangNhapPage from './pages/auth/DangNhapPage';
+import DangKyPage from './pages/auth/DangKyPage';
 
 // Admin Pages
-import DashboardPage from './DashboardPage';
-import AdminProductsPage from './pages/AdminProductsPage';
-import AdminOrdersPage from './pages/AdminOrdersPage';
-import AdminOrderDetailPage from './pages/AdminOrderDetailPage';
-import AdminReportPage from './pages/AdminReportPage';
+import DashboardPage from './pages/admin/DashboardPage';
+import AdminProductsPage from './pages/admin/AdminProductsPage';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
+import AdminReportPage from './pages/admin/AdminReportPage';
 
 import './assets/styles/App.css';
 

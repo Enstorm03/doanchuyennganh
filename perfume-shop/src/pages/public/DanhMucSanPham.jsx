@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import ProductCard from '../components/product/ProductCard';
+import ProductCard from '../../components/product/ProductCard';
 
 // Import ảnh (hoặc dùng link placeholder nếu chưa có đủ ảnh)
-import chanelImg from '../assets/images/unnamed.png';
-import diorImg from '../assets/images/dior.png';
+import chanelImg from '../../assets/images/unnamed.png';
+import diorImg from '../../assets/images/dior.png';
 
 
 // Dữ liệu giả cho danh mục

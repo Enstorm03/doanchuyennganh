@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import ProductCard from '../components/product/ProductCard';
+import ProductCard from '../../components/product/ProductCard';
 
 // 1. Import hình ảnh (Đảm bảo tên file trong máy bạn đúng là banner-home.png hay .jpg nhé)
-import bannerImg from '../assets/images/banner-home.png'; 
-import chanelImg from '../assets/images/unnamed.png';     
-import diorImg from '../assets/images/dior.png';         
+import bannerImg from '../../assets/images/banner-home.png';
+import chanelImg from '../../assets/images/unnamed.png';
+import diorImg from '../../assets/images/dior.png';
 
 const featuredProducts = [
   { id: 1, name: "Chanel N°5", brand: "Chanel", price: 150, image: chanelImg },

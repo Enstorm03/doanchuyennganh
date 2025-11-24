@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import unnamedImg from '../assets/images/unnamed.png';
-import diorImg from '../assets/images/dior.png';
+import unnamedImg from '../../assets/images/unnamed.png';
+import diorImg from '../../assets/images/dior.png';
 
 // --- 1. DỮ LIỆU GIẢ (MOCK DATA) ---
 // (Sau này phần này sẽ được thay thế bằng việc gọi API từ Spring Boot)
