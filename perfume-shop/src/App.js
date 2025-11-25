@@ -11,6 +11,7 @@ import CategoryPage from './pages/public/DanhMucSanPham';
 import GioHangPage from './pages/public/GioHang';
 import ThanhToanPage from './pages/public/ThanhToan';
 import ThuongHieuPage from './pages/public/ThuongHieuPage';
+import POSPage from './pages/public/POSPage';
 
 // Auth Pages
 import DangNhapPage from './pages/auth/DangNhapPage';
@@ -50,6 +51,7 @@ function App() {
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
           <Route path="reports" element={<AdminReportPage />} />
+          <Route path="pos" element={<POSPage />} />
         </Route>
       </Routes>
     </div>

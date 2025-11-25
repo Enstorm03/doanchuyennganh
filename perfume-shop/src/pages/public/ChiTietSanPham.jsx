@@ -3,6 +3,35 @@ import { Link, useParams } from 'react-router-dom';
 import unnamedImg from '../../assets/images/unnamed.png';
 import diorImg from '../../assets/images/dior.png';
 
+// BACKEND-COMMENT: Dữ liệu chi tiết sản phẩm sẽ được lấy từ API.
+// Thay vì dùng mảng `productsData` có sẵn, bạn sẽ dùng `useEffect` để gọi API khi component được render.
+// ID của sản phẩm sẽ được lấy từ URL thông qua `useParams`.
+//
+// Ví dụ:
+// const { id } = useParams();
+// const [product, setProduct] = useState(null);
+// const [loading, setLoading] = useState(true);
+// const [error, setError] = useState(null);
+//
+// useEffect(() => {
+//   setLoading(true);
+//   fetch(`/api/products/${id}`) // Đường dẫn API để lấy chi tiết sản phẩm
+//     .then(res => {
+//       if (!res.ok) {
+//         throw new Error('Sản phẩm không tồn tại');
+//       }
+//       return res.json();
+//     })
+//     .then(data => {
+//       setProduct(data);
+//       setLoading(false);
+//     })
+//     .catch(err => {
+//       setError(err.message);
+//       setLoading(false);
+//     });
+// }, [id]); // useEffect sẽ chạy lại mỗi khi `id` trên URL thay đổi
+
 // --- 1. DỮ LIỆU GIẢ (MOCK DATA) ---
 // (Sau này phần này sẽ được thay thế bằng việc gọi API từ Spring Boot)
 // Lưu ý: ID ở đây phải khớp với ID bạn đã gán ở HomePage
@@ -87,9 +116,34 @@ const ProductDetail = () => {
 
             {/* Các nút bấm */}
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              {/* BACKEND-COMMENT: Nút "Thêm vào giỏ hàng" cần một hàm `onClick`.
+                  Hàm này sẽ gọi API để thêm sản phẩm vào giỏ hàng của người dùng.
+                  Ví dụ:
+                  const handleAddToCart = () => {
+                    // Gọi API, phương thức POST
+                    fetch('/api/cart/add', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ productId: product.id, quantity: 1 })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                      // Hiển thị thông báo thành công (ví dụ: dùng react-toastify)
+                      console.log('Đã thêm vào giỏ!', data);
+                    })
+                    .catch(err => {
+                      // Hiển thị thông báo lỗi
+                      console.error('Thêm thất bại!', err);
+                    });
+                  }
+              */}
               <button className="flex-1 bg-primary text-white font-bold py-4 px-8 rounded-lg hover:bg-opacity-90 transition-all transform hover:-translate-y-1 shadow-md">
                 Thêm vào giỏ hàng
               </button>
+              {/* BACKEND-COMMENT: Nút "Mua ngay" có thể có 2 hướng xử lý:
+                  1. Thêm vào giỏ hàng (giống nút trên) rồi tự động chuyển người dùng sang trang thanh toán.
+                  2. Hoặc xử lý một logic mua ngay riêng biệt nếu backend có hỗ trợ.
+              */}
               <button className="flex-1 border-2 border-primary text-primary font-bold py-4 px-8 rounded-lg hover:bg-primary/10 transition-all">
                 Mua ngay
               </button>

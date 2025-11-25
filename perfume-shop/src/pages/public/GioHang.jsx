@@ -2,6 +2,28 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const GioHangPage = () => {
+  // BACKEND-COMMENT: Dữ liệu giỏ hàng là của riêng mỗi người dùng và cần được lấy từ backend.
+  // 1. Dùng `useEffect` để gọi API lấy thông tin giỏ hàng khi trang được tải.
+  //    API này cần được bảo vệ, chỉ user đã đăng nhập mới xem được giỏ hàng của mình.
+  //    Ví dụ: `GET /api/cart` (backend sẽ dựa vào token/session để biết là user nào).
+  // 2. Dùng `useState` để lưu trữ danh sách sản phẩm trong giỏ.
+  //
+  /* Ví dụ:
+  const [cartItems, setCartItems] = useState([]);
+  const [cartSummary, setCartSummary] = useState({ subtotal: 0, total: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/cart') // Cần có cơ chế xác thực (authentication)
+      .then(res => res.json())
+      .then(data => {
+        setCartItems(data.items);       // API nên trả về danh sách sản phẩm
+        setCartSummary(data.summary); // và cả thông tin tổng tiền
+        setLoading(false);
+      });
+  }, []);
+  */
+
   return (
     <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
       {/* Breadcrumbs */}
@@ -29,6 +51,16 @@ const GioHangPage = () => {
               <div className="col-span-1 text-right">Tổng</div>
             </div>
 
+            {/* BACKEND-COMMENT: Chỗ này sẽ không phải là code HTML tĩnh nữa.
+                Bạn sẽ dùng hàm `.map()` để lặp qua mảng `cartItems` đã lấy được từ API.
+                Mỗi một `item` trong mảng sẽ được render ra thành một khối div như bên dưới.
+                Ví dụ:
+                `cartItems.map(item => (`
+                  `<div key={item.id}> ...render item... </div>`
+                `))`
+                Bạn cũng nên xử lý trường hợp `cartItems` rỗng (giỏ hàng trống).
+            */}
+
             {/* List Item 1 */}
             <div className="grid grid-cols-4 sm:grid-cols-6 items-center gap-4 py-4 border-b border-border-light dark:border-border-dark">
               <div className="col-span-4 sm:col-span-3 flex items-center gap-4">
@@ -36,15 +68,27 @@ const GioHangPage = () => {
                 <div className="flex flex-col">
                   <p className="text-base font-medium">Chanel No. 5 Eau de Parfum</p>
                   <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">100ml</p>
+                  {/* BACKEND-COMMENT: Nút xóa sẽ gọi hàm xử lý, hàm này sẽ gửi request DELETE tới API.
+                      Ví dụ: `onClick={() => handleRemove(item.id)}`
+                      Hàm `handleRemove` sẽ `fetch('/api/cart/remove/' + itemId, { method: 'DELETE' })`
+                      Sau khi thành công, bạn cần cập nhật lại state `cartItems` để UI thay đổi.
+                  */}
                   <button className="text-left mt-2 text-xs text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">delete</span> Xóa
                   </button>
                 </div>
               </div>
               <div className="hidden sm:block text-right">
+                {/* BACKEND-COMMENT: Giá này lấy từ `item.product.price` */}
                 <p className="text-sm font-medium">$145.00</p>
               </div>
               <div className="col-span-2 sm:col-span-1 flex justify-center items-center">
+                {/* BACKEND-COMMENT: Toàn bộ cụm này dùng để cập nhật số lượng.
+                    - Nút `+` và `-` sẽ gọi hàm `handleUpdateQuantity(item.id, newQuantity)`.
+                    - Hàm này sẽ gửi request `PUT` hoặc `PATCH` tới API (ví dụ: `/api/cart/update`).
+                    - Body của request sẽ chứa ID sản phẩm và số lượng mới.
+                    - Để tối ưu, bạn có thể dùng kỹ thuật "debounce" để không gọi API liên tục khi người dùng bấm nhanh.
+                */}
                 <div className="flex items-center gap-2 text-text-primary-light dark:text-text-primary-dark bg-background-light dark:bg-background-dark rounded-full p-1">
                   <button className="text-base font-medium flex h-7 w-7 items-center justify-center rounded-full hover:bg-border-light dark:hover:bg-border-dark cursor-pointer transition-colors">-</button>
                   <input className="text-sm font-medium w-8 p-0 text-center bg-transparent focus:outline-0 focus:ring-0 border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" defaultValue="1" />
@@ -52,6 +96,7 @@ const GioHangPage = () => {
                 </div>
               </div>
               <div className="col-span-2 sm:col-span-1 text-right">
+                {/* BACKEND-COMMENT: Tổng tiền của dòng này = `item.product.price * item.quantity` */}
                 <p className="text-base font-bold">$145.00</p>
               </div>
             </div>
@@ -87,6 +132,11 @@ const GioHangPage = () => {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
+          {/* BACKEND-COMMENT: Thông tin tóm tắt đơn hàng này nên được lấy từ state `cartSummary`.
+              Backend nên tính toán sẵn và trả về tổng tiền cùng với danh sách sản phẩm
+              để đảm bảo sự chính xác tuyệt đối (tránh sai lệch do làm tròn, khuyến mãi...).
+              Ví dụ: `cartSummary.subtotal`, `cartSummary.total`.
+          */}
           <div className="bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-sm sticky top-28">
             <h2 className="text-xl font-bold mb-6 border-b border-border-light dark:border-border-dark pb-4">Tóm tắt đơn hàng</h2>
             <div className="space-y-4 text-sm">
@@ -113,6 +163,11 @@ const GioHangPage = () => {
       </div>
 
       {/* You may also like section */}
+      {/* BACKEND-COMMENT: Dữ liệu cho khu vực này cũng nên được lấy động từ API.
+          Backend có thể cung cấp một endpoint gợi ý sản phẩm dựa trên những gì có trong giỏ hàng.
+          Ví dụ: `GET /api/products/recommendations?based_on_cart=true`
+          Bạn sẽ fetch dữ liệu này và render tương tự như các danh sách sản phẩm khác.
+      */}
       <div className="mt-16 md:mt-24">
         <h2 className="text-2xl font-bold mb-6 text-center">Có thể bạn cũng thích</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">

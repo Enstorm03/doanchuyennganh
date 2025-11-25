@@ -1,5 +1,27 @@
+
+
 import React from 'react';
 import { Link } from 'react-router-dom';
+
+// BACKEND-COMMENT: Danh sách các thương hiệu nên được lấy động từ backend
+// thay vì hardcode như thế này. Việc này giúp bạn có thể dễ dàng thêm/sửa/xóa
+// các thương hiệu từ database mà không cần sửa code.
+/*
+1. Tạo state để lưu danh sách thương hiệu:
+   const [brands, setBrands] = useState([]);
+   const [loading, setLoading] = useState(true);
+
+2. Dùng useEffect để gọi API khi component được render:
+   useEffect(() => {
+     fetch('/api/brands') // API endpoint ví dụ để lấy tất cả thương hiệu
+       .then(res => res.json())
+       .then(data => {
+         setBrands(data);
+         setLoading(false);
+       })
+       .catch(error => console.error("Lỗi khi lấy danh sách thương hiệu:", error));
+   }, []); // Mảng rỗng đảm bảo useEffect chỉ chạy 1 lần.
+*/
 
 // Dữ liệu mẫu cho các thương hiệu
 const brands = [
