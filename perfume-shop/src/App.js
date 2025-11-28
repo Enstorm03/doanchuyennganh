@@ -33,7 +33,7 @@ function App() {
         {/* Public Routes with Layout */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/category" element={<CategoryPage />} />
+          <Route path="/products" element={<CategoryPage />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<GioHangPage />} />
           <Route path="/thanh-toan" element={<ThanhToanPage />} />

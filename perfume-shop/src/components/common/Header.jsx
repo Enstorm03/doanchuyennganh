@@ -1,18 +1,18 @@
 import { Link } from 'react-router-dom';
 
-const Header = ({ brandName = "PerfumeStore" }) => {
+const Header = ({ brandName = "Enstorm" }) => {
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-4 sm:px-10 py-3 bg-surface-light dark:bg-surface-dark sticky top-0 z-50">
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-4 text-text-light dark:text-text-dark">
           <div className="text-primary text-2xl">
-            <span className="material-symbols-outlined">filter_vintage</span>
+            <Link className="material-symbols-outlined" to="/" >{brandName}</Link>
           </div>
-          <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]">{brandName}</h2>
+          {/* <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]"></h2> */}
         </div>
         <div className="hidden lg:flex items-center gap-9">
           <Link className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" to="/">Trang Chu</Link>
-          <Link className="text-sm font-medium leading-normal text-primary dark:text-primary" to="/category">San Pham</Link>
+          <Link className="text-sm font-medium leading-normal text-primary dark:text-primary" to="/products">San Pham</Link>
           <Link className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" to="/brands">Thuong Hieu</Link>
           <a className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" href="#">Blog</a>
         </div>

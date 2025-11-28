@@ -1,18 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const ProductCard = ({ id_san_pham, ten_san_pham, gia_ban, url_hinh_anh, id_thuong_hieu = 1 }) => {
+const ProductCard = ({ id_san_pham, ten_san_pham, gia_ban, url_hinh_anh, id_thuong_hieu  }) => {
   // Map brand IDs to names (same as in POSPage)
-  const brands = {
-    1: "Chanel",
-    2: "Dior",
-    3: "Versace",
-    4: "Tom Ford",
-    5: "Creed",
-    6: "Giorgio Armani",
-    7: "YSL",
-    8: "Paco Rabanne"
-  };
+
 
   return (
     <Link to={`/product/${id_san_pham}`} className="flex flex-col gap-4 group">
@@ -25,8 +16,8 @@ const ProductCard = ({ id_san_pham, ten_san_pham, gia_ban, url_hinh_anh, id_thuo
       </div>
       <div className="px-2">
         <p className="text-base font-bold leading-normal">{ten_san_pham}</p>
-        <p className="text-text-subtle-light dark:text-text-subtle-dark text-sm font-normal leading-normal">{brands[id_thuong_hieu]}</p>
-        <p className="text-primary text-sm font-bold leading-normal mt-1">${gia_ban}</p>
+        <p className="text-text-subtle-light dark:text-text-subtle-dark text-sm font-normal leading-normal">{[id_thuong_hieu]}</p>
+        <p className="text-primary text-sm font-bold leading-normal mt-1">{gia_ban.toLocaleString('vi-VN')}₫</p>
       </div>
     </Link>
   );

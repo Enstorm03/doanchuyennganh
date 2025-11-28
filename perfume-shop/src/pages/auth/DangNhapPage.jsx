@@ -53,9 +53,13 @@ const DangNhapPage = () => {
   return (
     <main className="flex flex-1 justify-center items-center py-12 px-4 bg-background-light dark:bg-background-dark min-h-screen">
       <div className="w-full max-w-md">
+        
         <div className="bg-surface-light dark:bg-surface-dark p-8 rounded-2xl shadow-lg border border-border-light dark:border-border-dark">
+          
+            <Link className="text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary transition-colors" to="/"> Quay lại trang chủ</Link>
           <div className="text-center mb-8">
             <h1 className="text-3xl font-black text-text-light dark:text-text-dark">Đăng Nhập</h1>
+            
             <p className="text-text-subtle-light dark:text-text-subtle-dark mt-2">Chào mừng bạn trở lại!</p>
           </div>
 

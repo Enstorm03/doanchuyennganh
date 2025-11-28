@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ProductCard from '../../components/product/ProductCard';
+import api from '../../services/api';
 
 // Import ảnh (hoặc dùng link placeholder nếu chưa có đủ ảnh)
 import chanelImg from '../../assets/images/unnamed.png';
@@ -61,26 +62,38 @@ useEffect(() => {
 }, [category, currentPage, sortBy, selectedBrands, priceRange, selectedConcentrations]); // Dependency array
 */
 
-// Dữ liệu giả cho danh mục - theo schema San_Pham table
-const productsData = [
-  { id_san_pham: 2, ten_san_pham: "Sauvage EDP", id_thuong_hieu: 2, id_danh_muc: 1, url_hinh_anh: diorImg, gia_ban: 120, so_luong_ton_kho: 15 },
-  { id_san_pham: 1, ten_san_pham: "Bleu de Chanel", id_thuong_hieu: 1, id_danh_muc: 1, url_hinh_anh: chanelImg, gia_ban: 150, so_luong_ton_kho: 10 },
-  { id_san_pham: 3, ten_san_pham: "Versace Eros", id_thuong_hieu: 3, id_danh_muc: 1, url_hinh_anh: "https://placehold.co/400x400?text=Versace", gia_ban: 95, so_luong_ton_kho: 8 },
-  { id_san_pham: 4, ten_san_pham: "Tom Ford Oud Wood", id_thuong_hieu: 4, id_danh_muc: 1, url_hinh_anh: "https://placehold.co/400x400?text=TomFord", gia_ban: 250, so_luong_ton_kho: 5 },
-  { id_san_pham: 5, ten_san_pham: "Creed Aventus", id_thuong_hieu: 5, id_danh_muc: 1, url_hinh_anh: "https://placehold.co/400x400?text=Creed", gia_ban: 350, so_luong_ton_kho: 3 },
-  { id_san_pham: 6, ten_san_pham: "Acqua di Gio", id_thuong_hieu: 6, id_danh_muc: 1, url_hinh_anh: "https://placehold.co/400x400?text=Armani", gia_ban: 110, so_luong_ton_kho: 12 },
-  { id_san_pham: 7, ten_san_pham: "YSL Y EDP", id_thuong_hieu: 7, id_danh_muc: 1, url_hinh_anh: "https://placehold.co/400x400?text=YSL", gia_ban: 130, so_luong_ton_kho: 7 },
-  { id_san_pham: 8, ten_san_pham: "Invictus", id_thuong_hieu: 8, id_danh_muc: 1, url_hinh_anh: "https://placehold.co/400x400?text=Paco", gia_ban: 90, so_luong_ton_kho: 20 },
-];
+
 
 const CategoryPage = () => {
   const [priceRange, setPriceRange] = useState(2500000); // State cho thanh trượt giá
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { category } = useParams();
 
   let categoryName = "";
   if (category === "men") categoryName = "Nam";
   else if (category === "women") categoryName = "Nữ";
   else categoryName = "Unisex";
+
+  // Fetch products on component mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedProducts = await api.getAllProducts();
+        setProducts(fetchedProducts);
+      } catch (err) {
+        setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <main className="container mx-auto px-4 py-8 min-h-screen bg-background-light dark:bg-background-dark">
@@ -171,7 +184,9 @@ const CategoryPage = () => {
           
           {/* Sorting Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 p-4 bg-white dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark">
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Hiển thị {productsData.length} sản phẩm</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
+              {loading ? 'Đang tải...' : error ? 'Lỗi tải sản phẩm' : `Hiển thị ${products.length} sản phẩm`}
+            </p>
             {/* BACKEND-COMMENT: Tương tự bộ lọc, việc thay đổi dropdown này sẽ cập nhật state `sortBy`.
                 Ví dụ: `<select onChange={(e) => setSortBy(e.target.value)} ...>`
                 Việc `setSortBy` sẽ kích hoạt `useEffect` gọi lại API với tham số `sortBy` mới.
@@ -187,19 +202,53 @@ const CategoryPage = () => {
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Đang tải sản phẩm...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md mx-auto">
+                <p className="text-red-800 dark:text-red-200 font-medium mb-2">Lỗi tải sản phẩm</p>
+                <p className="text-red-600 dark:text-red-300 text-sm">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+                >
+                  Thử lại
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Product Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-            {productsData.map((product) => (
-              <ProductCard
-                key={product.id_san_pham}
-                id_san_pham={product.id_san_pham}
-                ten_san_pham={product.ten_san_pham}
-                gia_ban={product.gia_ban}
-                url_hinh_anh={product.url_hinh_anh}
-                id_thuong_hieu={product.id_thuong_hieu}
-              />
-            ))}
-          </div>
+          {!loading && !error && (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+              {products.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500 dark:text-gray-400">Không có sản phẩm nào.</p>
+                </div>
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id_san_pham}
+                    id_san_pham={product.id_san_pham}
+                    ten_san_pham={product.ten_san_pham}
+                    gia_ban={product.gia_ban} 
+                    url_hinh_anh={product.url_hinh_anh}
+                    id_thuong_hieu={product.id_thuong_hieu}
+                  />
+                ))
+              )}
+            </div>
+          )}
 
           {/* Pagination */}
           {/* BACKEND-COMMENT: Phần phân trang này sẽ được render động dựa vào `totalPages` nhận được từ API.

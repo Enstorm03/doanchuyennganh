@@ -1,32 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../../components/product/ProductCard';
+import api from '../../services/api';
 
 // 1. Import hình ảnh (Đảm bảo tên file trong máy bạn đúng là banner-home.png hay .jpg nhé)
 import bannerImg from '../../assets/images/banner-home.png';
 import chanelImg from '../../assets/images/unnamed.png';
 import diorImg from '../../assets/images/dior.png';
 
-// BACKEND-COMMENT: Chỗ này là nơi dữ liệu sản phẩm đang được hardcode (viết thẳng vào code).
-// Khi có backend, bạn sẽ xóa mảng `featuredProducts` này đi.
-// Thay vào đó, bạn sẽ dùng `useState` và `useEffect` của React để gọi API lấy danh sách sản phẩm.
-// Ví dụ:
-// const [featuredProducts, setFeaturedProducts] = useState([]);
-//
-// useEffect(() => {
-//   // fetch('/api/products?featured=true')  // Đây là đường dẫn API ví dụ
-//   //   .then(res => res.json())
-//   //   .then(data => setFeaturedProducts(data));
-// }, []);
-
-const featuredProducts = [
-  { id_san_pham: 1, ten_san_pham: "Chanel N°5", gia_ban: 150, url_hinh_anh: chanelImg },
-  { id_san_pham: 2, ten_san_pham: "Dior Sauvage", gia_ban: 120, url_hinh_anh: diorImg },
-  { id_san_pham: 3, ten_san_pham: "Creed Aventus", gia_ban: 350, url_hinh_anh: "https://placehold.co/300x400?text=Creed" },
-  { id_san_pham: 4, ten_san_pham: "Jo Malone", gia_ban: 145, url_hinh_anh: "https://placehold.co/300x400?text=JoMalone" },
-];
-
 const HomePage = () => {
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const allProducts = await api.getAllProducts();
+        // Take first 4 products as featured products
+        setFeaturedProducts(allProducts.slice(0, 4));
+      } catch (err) {
+        setError('Không thể tải sản phẩm nổi bật');
+        console.error('Error fetching featured products:', err);
+        // Fallback to some default products if API fails
+        setFeaturedProducts([
+          { id_san_pham: 1, ten_san_pham: "Sản phẩm mẫu", gia_ban: 100000, url_hinh_anh: chanelImg, id_thuong_hieu: 1 },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, []);
   return (
     <main className="flex-1 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
       
@@ -51,7 +59,7 @@ const HomePage = () => {
                               Tỏa Sáng Dưới Nắng Vàng. Giảm giá 30%.
                           </h2>              </div>
              <Link
-                    to="/category"
+                    to="/products"
                     className="z-10 mt-4 h-12 px-8 bg-primary text-white font-bold rounded-lg hover:bg-opacity-90 transition-all shadow-lg flex items-center justify-center"
                   >
                     Khám Phá Ngay
@@ -63,18 +71,45 @@ const HomePage = () => {
       {/* === PRODUCTS SECTION === */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <h2 className="text-3xl font-bold tracking-tight px-4 pb-6">Sản Phẩm Bán Chạy Nhất</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard
-                key={product.id_san_pham}
-                id_san_pham={product.id_san_pham}
-                ten_san_pham={product.ten_san_pham}
-                gia_ban={product.gia_ban}
-                url_hinh_anh={product.url_hinh_anh}
-                id_thuong_hieu={product.id_thuong_hieu}
-            />
-          ))}
-        </div>
+
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Đang tải sản phẩm...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-12">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md mx-auto">
+              <p className="text-red-800 dark:text-red-200 font-medium mb-2">Lỗi tải sản phẩm</p>
+              <p className="text-red-600 dark:text-red-300 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {featuredProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">Không có sản phẩm nào.</p>
+              </div>
+            ) : (
+              featuredProducts.map((product) => (
+                <ProductCard
+                    key={product.id_san_pham}
+                    id_san_pham={product.id_san_pham}
+                    ten_san_pham={product.ten_san_pham}
+                    gia_ban={product.gia_ban}
+                    url_hinh_anh={product.url_hinh_anh}
+                    id_thuong_hieu={product.id_thuong_hieu}
+                />
+              ))
+            )}
+          </div>
+        )}
       </section>
 
       {/* === CATEGORIES SECTION (Đã sửa lại dùng Link) === */}
@@ -87,8 +122,8 @@ const HomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             {/* Category 1: Nam */}
-            <Link to="/category" className="relative block rounded-lg overflow-hidden group h-64">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" 
+            <Link to="/products" className="relative block rounded-lg overflow-hidden group h-64">
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
                      style={{backgroundImage: `url(${diorImg})`}}></div>
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
                     <h3 className="text-white text-2xl font-bold tracking-wide">Nam Giới</h3>
@@ -96,8 +131,8 @@ const HomePage = () => {
             </Link>
 
             {/* Category 2: Nữ */}
-            <Link to="/category" className="relative block rounded-lg overflow-hidden group h-64">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" 
+            <Link to="/products" className="relative block rounded-lg overflow-hidden group h-64">
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
                      style={{backgroundImage: `url(${chanelImg})`}}></div>
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
                     <h3 className="text-white text-2xl font-bold tracking-wide">Nữ Giới</h3>
@@ -105,8 +140,8 @@ const HomePage = () => {
             </Link>
 
             {/* Category 3: Unisex */}
-            <Link to="/category" className="relative block rounded-lg overflow-hidden group h-64">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" 
+            <Link to="/products" className="relative block rounded-lg overflow-hidden group h-64">
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
                      style={{backgroundImage:`url(${bannerImg})`}}></div>
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
                     <h3 className="text-white text-2xl font-bold tracking-wide">Unisex</h3>
