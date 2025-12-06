@@ -6,9 +6,9 @@ import Footer from '../components/common/Footer';
 const PublicLayout = () => {
   return (
     <>
-      <Header brandName="Aura" />
+      <Header brandName="Enstorm" />
       <Outlet /> {/* Các trang public sẽ được render ở đây */}
-      <Footer brandName="Aura" />
+      <Footer brandName="Enstorm" />
     </>
   );
 };

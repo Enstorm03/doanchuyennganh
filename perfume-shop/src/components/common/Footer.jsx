@@ -1,4 +1,4 @@
-const Footer = ({ brandName = "PerfumeStore" }) => {
+const Footer = ({ brandName = "a" }) => {
   return (
     <footer className="bg-surface-light dark:bg-surface-dark mt-16 border-t border-border-light dark:border-border-dark">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -6,9 +6,9 @@ const Footer = ({ brandName = "PerfumeStore" }) => {
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-4 text-text-light dark:text-text-dark">
               <div className="text-primary text-2xl">
-                <span className="material-symbols-outlined">filter_vintage</span>
+                <span className="material-symbols-outlined"></span>
               </div>
-              <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]">{brandName}</h2>
+              <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]"></h2>
             </div>
             <p className="mt-4 text-subtle-light dark:text-subtle-dark text-sm">Discover your signature scent with our curated collection of luxury perfumes.</p>
           </div>
@@ -39,7 +39,7 @@ const Footer = ({ brandName = "PerfumeStore" }) => {
           </div>
         </div>
         <div className="mt-8 border-t border-border-light dark:border-border-dark pt-8 flex flex-col sm:flex-row items-center justify-between">
-          <p className="text-sm text-subtle-light dark:text-subtle-dark">© 2024 {brandName}. All rights reserved.</p>
+          <p className="text-sm text-subtle-light dark:text-subtle-dark">© 2025 {brandName} . All rights reserved.</p>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             {/* Social media icons would go here */}
           </div>

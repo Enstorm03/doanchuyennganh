@@ -1,229 +1,466 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../services/api';
 
 const ThanhToanPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [shippingDetails, setShippingDetails] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    email: ''
-  });
 
-  const [paymentMethod, setPaymentMethod] = useState('cod');
-
-  const [summary, setSummary] = useState({
-    subtotal: 0,
-    shipping: 0,
-    total: 0
-  });
-
+  const [cart, setCart] = useState(null);
+  const [preOrderData, setPreOrderData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [processing, setProcessing] = useState(false);
 
-  // Fetch cart summary on component mount
+  // Form data
+  const [shippingInfo, setShippingInfo] = useState({
+    tenNguoiNhan: '',
+    diaChiGiaoHang: '',
+    soDienThoai: '',
+    ghiChu: ''
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState('cod'); // cod, online, card
+
   useEffect(() => {
-    fetch('/api/cart')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.summary) {
-          setSummary({
-            subtotal: data.summary.subtotal || 315,
-            shipping: data.summary.shipping || 0,
-            total: data.summary.total || 315
-          });
-        }
+    const loadCheckoutData = async () => {
+      if (!user) {
         setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching cart summary:', error);
-        // Set default values if API fails
-        setSummary({
-          subtotal: 315,
-          shipping: 0,
-          total: 315
-        });
-        setLoading(false);
-      });
-  }, []);
+        return;
+      }
 
-  // Handle input changes for shipping details
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setShippingDetails(prev => ({
+      try {
+        // First, try to fetch cart data
+        const cartData = await api.getCart(user.id_nguoi_dung);
+
+        if (cartData && cartData.chiTiet && cartData.chiTiet.length > 0) {
+          // User has cart items - proceed with cart checkout
+          setCart(cartData);
+          setPreOrderData(null); // Ensure no pre-order data interferes
+          setLoading(false);
+        } else {
+          // No cart items - check for pre-order data
+          const savedPreOrderData = localStorage.getItem('pre-order-data');
+          if (savedPreOrderData) {
+            try {
+              const preOrder = JSON.parse(savedPreOrderData);
+              setPreOrderData(preOrder);
+              setPaymentMethod(preOrder.paymentMethod || 'deposit');
+            } catch (error) {
+              console.error('Error parsing pre-order data:', error);
+              localStorage.removeItem('pre-order-data');
+            }
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading checkout data:', error);
+        setError('Không thể tải dữ liệu thanh toán');
+        setLoading(false);
+      }
+    };
+
+    loadCheckoutData();
+  }, [user]);
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const cartData = await api.getCart(user.id_nguoi_dung);
+
+      if (!cartData || !cartData.chiTiet || cartData.chiTiet.length === 0) {
+        navigate('/cart');
+        return;
+      }
+
+      setCart(cartData);
+    } catch (err) {
+      setError('Không thể tải giỏ hàng');
+      console.error('Error fetching cart:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateTotal = () => {
+    if (!cart || !cart.chiTiet) return 0;
+    return cart.chiTiet.reduce((total, item) => {
+      return total + (item.giaTaiThoiDiemMua * item.soLuong);
+    }, 0);
+  };
+
+  const handleShippingInfoChange = (field, value) => {
+    setShippingInfo(prev => ({
       ...prev,
-      [id]: value
+      [field]: value
     }));
   };
 
-  // Handle payment method change
-  const handlePaymentMethodChange = (e) => {
-    setPaymentMethod(e.target.id);
+  const validateForm = () => {
+    if (!shippingInfo.tenNguoiNhan.trim()) {
+      alert('Vui lòng nhập tên người nhận');
+      return false;
+    }
+
+    if (!shippingInfo.diaChiGiaoHang.trim()) {
+      alert('Vui lòng nhập địa chỉ giao hàng');
+      return false;
+    }
+
+    if (!shippingInfo.soDienThoai.trim()) {
+      alert('Vui lòng nhập số điện thoại');
+      return false;
+    }
+
+    // Phone number validation
+   
+
+    return true;
   };
 
-  // Handle place order
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-
-    // Validation
-    if (!shippingDetails.name || !shippingDetails.address || !shippingDetails.phone) {
-      alert('Vui lòng nhập đầy đủ thông tin giao hàng');
-      return;
-    }
+  const handleSubmitOrder = async () => {
+    if (!validateForm()) return;
 
     try {
-      const orderData = {
-        ten_nguoi_nhan: shippingDetails.name,
-        dia_chi_giao_hang: shippingDetails.address,
-        so_dien_thoai: shippingDetails.phone,
-        trang_thai_thanh_toan: paymentMethod === 'cod' ? 'Chờ thanh toán' : 'Chờ cọc',
-        paymentMethod: paymentMethod
-      };
+      setProcessing(true);
 
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add auth header if needed
-        },
-        body: JSON.stringify(orderData)
-      });
+      let result;
 
-      if (response.ok) {
-        // Clear cart (you might need to call an API for this)
-        // navigate to thank you page or order details
-        alert('Đặt hàng thành công!');
-        navigate('/');
+      if (preOrderData) {
+        // Handle pre-order
+        const preOrderPayload = {
+          idNguoiDung: user.id_nguoi_dung,
+          tenNguoiNhan: shippingInfo.tenNguoiNhan.trim(),
+          diaChiGiaoHang: shippingInfo.diaChiGiaoHang.trim(),
+          soDienThoai: shippingInfo.soDienThoai.trim(),
+          ghiChu: preOrderData.ghiChu || shippingInfo.ghiChu.trim(),
+          phuongThucThanhToan: paymentMethod,
+          items: preOrderData.items.map(item => ({
+            sanPhamId: item.id_san_pham,
+            soLuong: item.quantity,
+            giaTaiThoiDiemMua: item.gia_ban
+          }))
+        };
+
+        result = await api.placeOrder(preOrderPayload);
+
+        // Clear pre-order data
+        localStorage.removeItem('pre-order-data');
       } else {
-        alert('Đặt hàng thất bại, vui lòng thử lại');
+        // Handle regular cart checkout
+        console.log('User object:', user);
+        console.log('User ID:', user?.id_nguoi_dung);
+
+        const orderData = {
+          userId: user?.id_nguoi_dung,
+          tenNguoiNhan: shippingInfo.tenNguoiNhan.trim(),
+          diaChiGiaoHang: shippingInfo.diaChiGiaoHang.trim(),
+          soDienThoai: shippingInfo.soDienThoai.trim(),
+          ghiChu: shippingInfo.ghiChu.trim(),
+          phuongThucThanhToan: paymentMethod
+        };
+
+        console.log('Order data to send:', orderData);
+
+        result = await api.checkoutCart(orderData);
       }
+
+      // Redirect to order success page or show success message
+      alert('Đặt hàng thành công! Mã đơn hàng: ' + result.idDonHang);
+      navigate('/lich-su-don-hang');
+
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Có lỗi xảy ra, vui lòng thử lại');
+      alert('Không thể đặt hàng: ' + error.message);
+    } finally {
+      setProcessing(false);
     }
   };
 
-  return (
-    <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
-      {/* Breadcrumbs */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors" to="/">Trang chủ</Link>
-          <span className="text-text-secondary-light dark:text-text-secondary-dark">/</span>
-          <Link className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors" to="/cart">Giỏ hàng</Link>
-          <span className="text-text-secondary-light dark:text-text-secondary-dark">/</span>
-          <span className="font-medium text-text-primary-light dark:text-text-primary-dark">Thanh toán</span>
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Yêu cầu đăng nhập</h2>
+          <p className="text-gray-600 mb-6">Vui lòng đăng nhập để thanh toán.</p>
+          <Link to="/login" className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90">
+            Đăng nhập
+          </Link>
         </div>
       </div>
+    );
+  }
 
-      {/* PageHeading */}
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-black tracking-[-0.033em]">Thanh toán</h1>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
+    );
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
-        {/* Shipping & Payment Details */}
-        <div className="lg:col-span-2">
-          {/* BACKEND-COMMENT: Dữ liệu của form này nên được quản lý bằng state của React.
-              Tạo một state, ví dụ `const [shippingDetails, setShippingDetails] = useState({...});`
-              Mỗi input sẽ có `value={shippingDetails.name}` và `onChange={handleInputChange}`.
-              Hàm `handleInputChange` sẽ cập nhật state `shippingDetails` tương ứng.
-              Khi người dùng nhấn nút đặt hàng, bạn sẽ lấy toàn bộ thông tin từ state này.
-          */}
-          <form className="flex flex-col gap-8">
-            {/* Shipping Details */}
-            <div className="bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-bold mb-6">Thông tin giao hàng</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label htmlFor="name" className="block text-sm font-medium mb-2">Họ và tên</label>
-                  <input type="text" id="name" value={shippingDetails.name} onChange={handleInputChange} className="form-input w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark" placeholder="Nguyễn Văn A" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label htmlFor="address" className="block text-sm font-medium mb-2">Địa chỉ</label>
-                  <input type="text" id="address" value={shippingDetails.address} onChange={handleInputChange} className="form-input w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark" placeholder="Số 1, Đường ABC, Phường XYZ, Quận 1" />
-                </div>
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Lỗi tải dữ liệu</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchCart}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if we have either cart items or pre-order data
+  const hasItems = (preOrderData && preOrderData.items && preOrderData.items.length > 0) ||
+                   (cart && cart.chiTiet && cart.chiTiet.length > 0);
+
+  if (!hasItems) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Không có sản phẩm để thanh toán</h2>
+          <p className="text-gray-600 mb-6">Vui lòng chọn sản phẩm trước khi thanh toán.</p>
+          <Link to="/products" className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90">
+            Mua sắm ngay
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isPreOrder = !!preOrderData;
+  const itemsToShow = preOrderData ? preOrderData.items : cart.chiTiet;
+  const totalAmount = preOrderData ? preOrderData.total : calculateTotal();
+
+  return (
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-4 mb-8">
+          <Link to={isPreOrder ? `/product/${preOrderData.items[0]?.id_san_pham}` : "/cart"} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+            <span className="material-symbols-outlined">arrow_back</span>
+          </Link>
+          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">
+            {isPreOrder ? 'Đặt hàng trước' : 'Thanh toán'}
+          </h1>
+        </div>
+
+        {isPreOrder && (
+          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-orange-600">🛒</span>
+              <h3 className="font-medium text-orange-800 dark:text-orange-200">Đơn hàng đặt trước</h3>
+            </div>
+            <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+              Sản phẩm sẽ về trong 7-10 ngày. Bạn chỉ cần thanh toán 50% giá trị trước.
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Forms */}
+          <div className="space-y-6">
+            {/* Shipping Information */}
+            <div className="bg-white dark:bg-content-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold mb-4">Thông tin giao hàng</h3>
+              <div className="space-y-4">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium mb-2">Số điện thoại</label>
-                  <input type="tel" id="phone" value={shippingDetails.phone} onChange={handleInputChange} className="form-input w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark" placeholder="09xxxxxxxx" />
+                  <label className="block text-sm font-medium mb-2">Tên người nhận *</label>
+                  <input
+                    type="text"
+                    value={shippingInfo.tenNguoiNhan}
+                    onChange={(e) => handleShippingInfoChange('tenNguoiNhan', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-background-dark"
+                    placeholder="Nhập tên người nhận"
+                    required
+                  />
                 </div>
+
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-2">Email</label>
-                  <input type="email" id="email" value={shippingDetails.email} onChange={handleInputChange} className="form-input w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark" placeholder="email@example.com" />
+                  <label className="block text-sm font-medium mb-2">Địa chỉ giao hàng *</label>
+                  <textarea
+                    value={shippingInfo.diaChiGiaoHang}
+                    onChange={(e) => handleShippingInfoChange('diaChiGiaoHang', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-background-dark"
+                    placeholder="Nhập địa chỉ chi tiết"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Số điện thoại *</label>
+                  <input
+                    type="number"
+                    value={shippingInfo.soDienThoai}
+                    onChange={(e) => handleShippingInfoChange('soDienThoai', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-background-dark"
+                    placeholder="Nhập số điện thoại"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Ghi chú (tùy chọn)</label>
+                  <textarea
+                    value={shippingInfo.ghiChu}
+                    onChange={(e) => handleShippingInfoChange('ghiChu', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-background-dark"
+                    placeholder="Ghi chú về đơn hàng..."
+                  />
                 </div>
               </div>
             </div>
 
             {/* Payment Method */}
-            {/* BACKEND-COMMENT: Việc lựa chọn phương thức thanh toán cũng cần được lưu vào state.
-                - "Thanh toán khi nhận hàng" (COD) là phương thức đơn giản nhất, chỉ cần lưu lựa chọn này vào đơn hàng.
-                - Với các phương thức online (chuyển khoản, ví điện tử...), đây là một tính năng phức tạp.
-                  Backend sẽ cần tích hợp với API của cổng thanh toán (ví dụ: Stripe, PayPal, VNPay, Momo...).
-                  Frontend có thể sẽ cần hiển thị một giao diện đặc biệt (như mã QR, form nhập thẻ) từ cổng thanh toán đó.
-            */}
-            <div className="bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-bold mb-6">Phương thức thanh toán</h2>
-              <div className="space-y-4">
-                <div className="flex items-center p-4 border rounded-lg border-border-light dark:border-border-dark">
-                  <input id="cod" name="paymentMethod" type="radio" checked={paymentMethod === 'cod'} onChange={handlePaymentMethodChange} className="form-radio h-4 w-4 text-primary focus:ring-primary" />
-                  <label htmlFor="cod" className="ml-3 block text-sm font-medium">Thanh toán khi nhận hàng (COD)</label>
-                </div>
-                <div className="flex items-center p-4 border rounded-lg border-border-light dark:border-border-dark">
-                  <input id="bank" name="paymentMethod" type="radio" checked={paymentMethod === 'bank'} onChange={handlePaymentMethodChange} className="form-radio h-4 w-4 text-primary focus:ring-primary" />
-                  <label htmlFor="bank" className="ml-3 block text-sm font-medium">Chuyển khoản ngân hàng</label>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
+            <div className="bg-white dark:bg-content-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold mb-4">Phương thức thanh toán</h3>
+              <div className="space-y-3">
+                <label className="flex items-center p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cod"
+                    checked={paymentMethod === 'cod'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mr-3"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">💵 Thanh toán khi nhận hàng (COD)</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Thanh toán bằng tiền mặt khi nhận hàng</p>
+                  </div>
+                </label>
 
-        {/* Order Summary */}
-        <div className="lg:col-span-1">
-          <div className="bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-sm sticky top-28">
-            {/* BACKEND-COMMENT: Tương tự trang giỏ hàng, các con số trong phần tóm tắt này (tạm tính, tổng cộng)
-                nên được lấy từ state `summary` đã gọi từ API để đảm bảo chúng luôn chính xác.
-            */}
-            <h2 className="text-xl font-bold mb-6 border-b border-border-light dark:border-border-dark pb-4">Tóm tắt đơn hàng</h2>
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-secondary-light dark:text-text-secondary-dark">Tạm tính</span>
-                <span className="font-medium">${summary.subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary-light dark:text-text-secondary-dark">Phí vận chuyển</span>
-                <span className="font-medium">{summary.shipping === 0 ? 'Miễn phí' : `$${summary.shipping.toFixed(2)}`}</span>
+                <label className="flex items-center p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="online"
+                    checked={paymentMethod === 'online'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mr-3"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">📱 Ví điện tử/ZaloPay/MoMo</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Thanh toán online an toàn</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="card"
+                    checked={paymentMethod === 'card'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mr-3"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">💳 Thẻ tín dụng/ghi nợ</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Thanh toán bằng thẻ</p>
+                  </div>
+                </label>
               </div>
             </div>
-            <div className="mt-6 pt-4 border-t border-border-light dark:border-border-dark">
-              <div className="flex justify-between items-center text-base font-bold">
-                <span>Tổng cộng</span>
-                <span>${summary.total.toFixed(2)}</span>
+          </div>
+
+          {/* Right Column - Order Summary */}
+          <div className="space-y-6">
+            {/* Order Items */}
+            <div className="bg-white dark:bg-content-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold mb-4">Sản phẩm trong đơn hàng</h3>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {itemsToShow.map((item) => {
+                  const itemData = isPreOrder ? item : item; // preOrder uses different field names
+                  return (
+                    <div key={isPreOrder ? item.id_san_pham : item.idSanPham} className="flex items-center gap-4 py-2">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                        <img
+                          src={(isPreOrder ? item.url_hinh_anh : item.urlHinhAnh) || "https://placehold.co/64x64?text=No+Image"}
+                          alt={isPreOrder ? item.ten_san_pham : item.tenSanPham}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-text-light dark:text-text-dark truncate">
+                          {isPreOrder ? item.ten_san_pham : item.tenSanPham}
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Số lượng: {isPreOrder ? item.quantity : item.soLuong}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">
+                          {((isPreOrder ? item.gia_ban : item.giaTaiThoiDiemMua) * (isPreOrder ? item.quantity : item.soLuong)).toLocaleString('vi-VN')}₫
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            {/* BACKEND-COMMENT: Đây là nút quan trọng nhất trên trang.
-                Nó cần một `onClick` handler, ví dụ `onClick={handlePlaceOrder}`.
-                Hàm `handlePlaceOrder` sẽ thực hiện các bước sau:
-                1. Thu thập tất cả dữ liệu:
-                   - `shippingDetails` từ state của form.
-                   - `paymentMethod` từ state của lựa chọn thanh toán.
-                   - (Có thể cần lấy lại thông tin giỏ hàng để đảm bảo không có gì thay đổi).
-                2. Kiểm tra dữ liệu (validation): Đảm bảo người dùng đã nhập đủ thông tin cần thiết.
-                3. Gửi request POST tới backend để tạo đơn hàng:
-                   `fetch('/api/orders', {`
-                     `method: 'POST',`
-                     `headers: { 'Content-Type': 'application/json' },`
-                     `body: JSON.stringify({ shippingDetails, paymentMethod, cartToken: '...' })`
-                   `})`
-                4. Xử lý kết quả:
-                   - Nếu thành công (response.ok): Chuyển hướng người dùng đến trang "Cảm ơn" hoặc "Chi tiết đơn hàng". Xóa giỏ hàng.
-                   - Nếu thất bại: Hiển thị thông báo lỗi cho người dùng.
-            */}
-            <button onClick={handlePlaceOrder} className="w-full mt-6 bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary/90 transition-colors duration-300">
-              Hoàn tất Đơn hàng
-            </button>
+
+            {/* Order Summary */}
+            <div className="bg-white dark:bg-content-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold mb-4">Tóm tắt đơn hàng</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span>Tạm tính ({itemsToShow.length} sản phẩm):</span>
+                  <span className="font-medium">{totalAmount.toLocaleString('vi-VN')}₫</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Phí vận chuyển:</span>
+                  <span className="font-medium text-green-600">Miễn phí</span>
+                </div>
+                {isPreOrder && (
+                  <div className="flex justify-between">
+                    <span>Đặt cọc (50%):</span>
+                    <span className="font-medium text-orange-600">-{preOrderData.depositAmount.toLocaleString('vi-VN')}₫</span>
+                  </div>
+                )}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <div className="flex justify-between text-xl font-bold">
+                    <span>{isPreOrder ? 'Cần thanh toán:' : 'Tổng cộng:'}</span>
+                    <span className="text-primary">
+                      {isPreOrder
+                        ? preOrderData.depositAmount.toLocaleString('vi-VN')
+                        : totalAmount.toLocaleString('vi-VN')
+                      }₫
+                    </span>
+                  </div>
+                  {isPreOrder && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Còn lại: {(totalAmount - preOrderData.depositAmount).toLocaleString('vi-VN')}₫ (thanh toán khi nhận hàng)
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handleSubmitOrder}
+                disabled={processing}
+                className="w-full bg-primary text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors mt-6 disabled:opacity-50"
+              >
+                {processing ? 'Đang xử lý...' : (isPreOrder ? 'Đặt cọc ngay' : 'Đặt hàng ngay')}
+              </button>
+
+              <div className="mt-4 text-center">
+                <Link to={isPreOrder ? `/product/${preOrderData.items[0]?.id_san_pham}` : "/cart"} className="text-primary hover:underline text-sm">
+                  {isPreOrder ? 'Quay lại sản phẩm' : 'Quay lại giỏ hàng'}
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 

@@ -1,203 +1,294 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../services/api';
 
 const GioHangPage = () => {
-  // BACKEND-COMMENT: Dữ liệu giỏ hàng là của riêng mỗi người dùng và cần được lấy từ backend.
-  // 1. Dùng `useEffect` để gọi API lấy thông tin giỏ hàng khi trang được tải.
-  //    API này cần được bảo vệ, chỉ user đã đăng nhập mới xem được giỏ hàng của mình.
-  //    Ví dụ: `GET /api/cart` (backend sẽ dựa vào token/session để biết là user nào).
-  // 2. Dùng `useState` để lưu trữ danh sách sản phẩm trong giỏ.
-  //
-  /* Ví dụ:
-  const [cartItems, setCartItems] = useState([]);
-  const [cartSummary, setCartSummary] = useState({ subtotal: 0, total: 0 });
+  const { user } = useAuth();
+  const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [updatingItem, setUpdatingItem] = useState(null);
 
   useEffect(() => {
-    fetch('/api/cart') // Cần có cơ chế xác thực (authentication)
-      .then(res => res.json())
-      .then(data => {
-        setCartItems(data.items);       // API nên trả về danh sách sản phẩm
-        setCartSummary(data.summary); // và cả thông tin tổng tiền
-        setLoading(false);
-      });
-  }, []);
-  */
+    if (user) {
+      fetchCart();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const cartData = await api.getCart(user.id_nguoi_dung);
+      setCart(cartData);
+    } catch (err) {
+      setError('Không thể tải giỏ hàng');
+      console.error('Error fetching cart:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateItemQuantity = async (sanPhamId, newQuantity) => {
+    if (newQuantity < 1) {
+      removeItem(sanPhamId);
+      return;
+    }
+
+    try {
+      setUpdatingItem(sanPhamId);
+      console.log('Updating quantity to:', newQuantity);
+
+      // Use API service method
+      await api.updateCartItem(user.id_nguoi_dung, sanPhamId, newQuantity);
+      await fetchCart(); // Refresh cart
+    } catch (error) {
+      console.error('Update quantity error:', error);
+      alert('Không thể cập nhật số lượng: ' + error.message);
+    } finally {
+      setUpdatingItem(null);
+    }
+  };
+
+  const removeItem = async (sanPhamId) => {
+    try {
+      setUpdatingItem(sanPhamId);
+
+      // Use API service method
+      await api.removeCartItem(user.id_nguoi_dung, sanPhamId);
+      await fetchCart(); // Refresh cart
+    } catch (error) {
+      alert('Không thể xóa sản phẩm: ' + error.message);
+    } finally {
+      setUpdatingItem(null);
+    }
+  };
+
+  const clearCart = async () => {
+    if (!window.confirm('Bạn có chắc muốn xóa toàn bộ giỏ hàng?')) return;
+
+    try {
+      setLoading(true);
+      await api.clearCart(user.id_nguoi_dung);
+      setCart(null);
+    } catch (error) {
+      alert('Không thể xóa giỏ hàng: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateTotal = () => {
+    if (!cart || !cart.chiTiet) return 0;
+    return cart.chiTiet.reduce((total, item) => {
+      return total + (item.giaTaiThoiDiemMua * item.soLuong);
+    }, 0);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Yêu cầu đăng nhập</h2>
+          <p className="text-gray-600 mb-6">Vui lòng đăng nhập để xem giỏ hàng của bạn.</p>
+          <Link to="/login" className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90">
+            Đăng nhập
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Lỗi tải giỏ hàng</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchCart}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isEmptyCart = !cart || !cart.chiTiet || cart.chiTiet.length === 0;
 
   return (
-    <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
-      {/* Breadcrumbs */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors" to="/">Trang chủ</Link>
-          <span className="text-text-secondary-light dark:text-text-secondary-dark">/</span>
-          <span className="font-medium text-text-primary-light dark:text-text-primary-dark">Giỏ hàng</span>
-        </div>
-      </div>
-
-      {/* PageHeading */}
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-black tracking-[-0.033em]">Giỏ hàng của bạn</h1>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
-        {/* Product List */}
-        <div className="lg:col-span-2">
-          <div className="flex flex-col gap-4">
-            <div className="hidden sm:grid grid-cols-6 gap-4 text-xs font-bold uppercase text-text-secondary-light dark:text-text-secondary-dark pb-2 border-b border-border-light dark:border-border-dark">
-              <div className="col-span-3">Sản phẩm</div>
-              <div className="col-span-1 text-right">Giá</div>
-              <div className="col-span-1 text-center">Số lượng</div>
-              <div className="col-span-1 text-right">Tổng</div>
-            </div>
-
-            {/* BACKEND-COMMENT: Chỗ này sẽ không phải là code HTML tĩnh nữa.
-                Bạn sẽ dùng hàm `.map()` để lặp qua mảng `cartItems` đã lấy được từ API.
-                Mỗi một `item` trong mảng sẽ được render ra thành một khối div như bên dưới.
-                Ví dụ:
-                `cartItems.map(item => (`
-                  `<div key={item.id}> ...render item... </div>`
-                `))`
-                Bạn cũng nên xử lý trường hợp `cartItems` rỗng (giỏ hàng trống).
-            */}
-
-            {/* List Item 1 */}
-            <div className="grid grid-cols-4 sm:grid-cols-6 items-center gap-4 py-4 border-b border-border-light dark:border-border-dark">
-              <div className="col-span-4 sm:col-span-3 flex items-center gap-4">
-                <div className="bg-center bg-no-repeat bg-cover rounded-lg h-20 w-20 flex-shrink-0" data-alt="Chanel No. 5 perfume bottle" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCsBSoxw6ErTCKumds_UIVYxwmaj-CfU9GYbIYGvTmDYq5ScqyV1RnKbdWXq0Xiz6h9tdlSY-l5VU431WwXaBZweSIhf2Wa13ZB8GQquWZWDFqDcHO_iXGijq7vcEw4cRVXOQz0QxVVZ7Rl9uonBOlwWGojn8ixg8vo3vPxtbYgCaNp7gJvbfPtlqunblceUqk0ShCDTP4CjYP2jWWP38VptksiwTWEfvJ7NkM9sW4QsuGLfNK9MOtTPlGYvHr3m_60DNTRyW4TRx0")` }}></div>
-                <div className="flex flex-col">
-                  <p className="text-base font-medium">Chanel No. 5 Eau de Parfum</p>
-                  <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">100ml</p>
-                  {/* BACKEND-COMMENT: Nút xóa sẽ gọi hàm xử lý, hàm này sẽ gửi request DELETE tới API.
-                      Ví dụ: `onClick={() => handleRemove(item.id)}`
-                      Hàm `handleRemove` sẽ `fetch('/api/cart/remove/' + itemId, { method: 'DELETE' })`
-                      Sau khi thành công, bạn cần cập nhật lại state `cartItems` để UI thay đổi.
-                  */}
-                  <button className="text-left mt-2 text-xs text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">delete</span> Xóa
-                  </button>
-                </div>
-              </div>
-              <div className="hidden sm:block text-right">
-                {/* BACKEND-COMMENT: Giá này lấy từ `item.product.price` */}
-                <p className="text-sm font-medium">$145.00</p>
-              </div>
-              <div className="col-span-2 sm:col-span-1 flex justify-center items-center">
-                {/* BACKEND-COMMENT: Toàn bộ cụm này dùng để cập nhật số lượng.
-                    - Nút `+` và `-` sẽ gọi hàm `handleUpdateQuantity(item.id, newQuantity)`.
-                    - Hàm này sẽ gửi request `PUT` hoặc `PATCH` tới API (ví dụ: `/api/cart/update`).
-                    - Body của request sẽ chứa ID sản phẩm và số lượng mới.
-                    - Để tối ưu, bạn có thể dùng kỹ thuật "debounce" để không gọi API liên tục khi người dùng bấm nhanh.
-                */}
-                <div className="flex items-center gap-2 text-text-primary-light dark:text-text-primary-dark bg-background-light dark:bg-background-dark rounded-full p-1">
-                  <button className="text-base font-medium flex h-7 w-7 items-center justify-center rounded-full hover:bg-border-light dark:hover:bg-border-dark cursor-pointer transition-colors">-</button>
-                  <input className="text-sm font-medium w-8 p-0 text-center bg-transparent focus:outline-0 focus:ring-0 border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" defaultValue="1" />
-                  <button className="text-base font-medium flex h-7 w-7 items-center justify-center rounded-full hover:bg-border-light dark:hover:bg-border-dark cursor-pointer transition-colors">+</button>
-                </div>
-              </div>
-              <div className="col-span-2 sm:col-span-1 text-right">
-                {/* BACKEND-COMMENT: Tổng tiền của dòng này = `item.product.price * item.quantity` */}
-                <p className="text-base font-bold">$145.00</p>
-              </div>
-            </div>
-
-            {/* List Item 2 */}
-            <div className="grid grid-cols-4 sm:grid-cols-6 items-center gap-4 py-4 border-b border-border-light dark:border-border-dark">
-              <div className="col-span-4 sm:col-span-3 flex items-center gap-4">
-                <div className="bg-center bg-no-repeat bg-cover rounded-lg h-20 w-20 flex-shrink-0" data-alt="Dior Sauvage perfume bottle" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCoysrAcul1qWbklfAUMZXe-LlkYgy8jDzPvj3zJpFpz_79rqUdvHmCtSNy40DYvh0zd6V4_b-rQ4OxAY2zeSx06SgSE8yeDyeZzIahhhuzxXRxTf8qZoHNzDAwN9D5IbncGJ96wXJz7iSx5bss0mlkqIH4IUQjWCrnaBHrTfxcmdbW2_FTWtZjM_mjqHF3psYxL7vVnxGitq7h03d4hPLpi9yXAAh5Grligjq9Iqxj5uZ-tg33ISXTDm-rK2KcJAjYEoQrzNxbfwo")` }}></div>
-                <div className="flex flex-col">
-                  <p className="text-base font-medium">Dior Sauvage Eau de Toilette</p>
-                  <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">60ml</p>
-                  <button className="text-left mt-2 text-xs text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">delete</span> Xóa
-                  </button>
-                </div>
-              </div>
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium">$85.00</p>
-              </div>
-              <div className="col-span-2 sm:col-span-1 flex justify-center items-center">
-                <div className="flex items-center gap-2 text-text-primary-light dark:text-text-primary-dark bg-background-light dark:bg-background-dark rounded-full p-1">
-                  <button className="text-base font-medium flex h-7 w-7 items-center justify-center rounded-full hover:bg-border-light dark:hover:bg-border-dark cursor-pointer transition-colors">-</button>
-                  <input className="text-sm font-medium w-8 p-0 text-center bg-transparent focus:outline-0 focus:ring-0 border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" defaultValue="2" />
-                  <button className="text-base font-medium flex h-7 w-7 items-center justify-center rounded-full hover:bg-border-light dark:hover:bg-border-dark cursor-pointer transition-colors">+</button>
-                </div>
-              </div>
-              <div className="col-span-2 sm:col-span-1 text-right">
-                <p className="text-base font-bold">$170.00</p>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-text-light dark:text-text-dark">
+            Giỏ hàng của bạn
+          </h1>
+          {!isEmptyCart && (
+            <button
+              onClick={clearCart}
+              className="text-red-500 hover:text-red-700 flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined">delete_sweep</span>
+              Xóa toàn bộ
+            </button>
+          )}
         </div>
 
-        {/* Order Summary */}
-        <div className="lg:col-span-1">
-          {/* BACKEND-COMMENT: Thông tin tóm tắt đơn hàng này nên được lấy từ state `cartSummary`.
-              Backend nên tính toán sẵn và trả về tổng tiền cùng với danh sách sản phẩm
-              để đảm bảo sự chính xác tuyệt đối (tránh sai lệch do làm tròn, khuyến mãi...).
-              Ví dụ: `cartSummary.subtotal`, `cartSummary.total`.
-          */}
-          <div className="bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-sm sticky top-28">
-            <h2 className="text-xl font-bold mb-6 border-b border-border-light dark:border-border-dark pb-4">Tóm tắt đơn hàng</h2>
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-secondary-light dark:text-text-secondary-dark">Tạm tính</span>
-                <span className="font-medium">$315.00</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary-light dark:text-text-secondary-dark">Phí vận chuyển</span>
-                <span className="font-medium">Miễn phí</span>
-              </div>
+        {isEmptyCart ? (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+              <span className="material-symbols-outlined text-4xl text-gray-400">shopping_cart</span>
             </div>
-            <div className="mt-6 pt-4 border-t border-border-light dark:border-border-dark">
-              <div className="flex justify-between items-center text-base font-bold">
-                <span>Tổng cộng</span>
-                <span>$315.00</span>
-              </div>
-            </div>
-            <Link to="/thanh-toan" className="block text-center w-full mt-6 bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary/90 transition-colors duration-300">
-              Tiến hành Thanh toán
+            <h2 className="text-2xl font-semibold text-text-light dark:text-text-dark mb-2">
+              Giỏ hàng trống
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
+              Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm.
+            </p>
+            <Link
+              to="/products"
+              className="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary/90 inline-flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined">shopping_bag</span>
+              Tiếp tục mua sắm
             </Link>
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Cart Items */}
+            <div className="lg:col-span-2 space-y-4">
+              {cart.chiTiet.map((item, index) => {
+                const itemId = item.sanPhamId || item.idSanPham || item.id;
+                return (
+                  <div key={itemId || `item-${index}`} className="bg-white dark:bg-content-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="flex items-center gap-4">
+                    {/* Product Image */}
+                    <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                      <img
+                        src={item.urlHinhAnh || "https://placehold.co/80x80?text=No+Image"}
+                        alt={item.tenSanPham}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-      {/* You may also like section */}
-      {/* BACKEND-COMMENT: Dữ liệu cho khu vực này cũng nên được lấy động từ API.
-          Backend có thể cung cấp một endpoint gợi ý sản phẩm dựa trên những gì có trong giỏ hàng.
-          Ví dụ: `GET /api/products/recommendations?based_on_cart=true`
-          Bạn sẽ fetch dữ liệu này và render tương tự như các danh sách sản phẩm khác.
-      */}
-      <div className="mt-16 md:mt-24">
-        <h2 className="text-2xl font-bold mb-6 text-center">Có thể bạn cũng thích</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {/* Product Card 1 */}
-          <div className="flex flex-col items-center text-center group">
-            <div className="bg-center bg-no-repeat bg-cover rounded-lg w-full aspect-square mb-3" data-alt="Tom Ford perfume bottle" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuAhUvwuuAOOrRBqNoZYZTH_go2Wej7ddd2XG-dkxiGi_mg4DYPKO6Jhc7ctlMFfiEOurdDQDR6-467QsNUU2u2OtwPLYRmdeGVZr3IeYbzbNRWfOI5qtUgoxbNDawzKK6D78BY3RkZ0am3nKqVGV6LLIr73_5bXiWSA0aMTEGZdyVM36X39Jlkg_SCiFcZ8jaAf2yQMZfr_7VHuaFA5tqtHQmzESn3NAqL8UfObeOZgVsQRtzDmXLZn-GaBpapeCrRPx8Q1fZa_vww")` }}></div>
-            <h3 className="font-medium group-hover:text-primary transition-colors">Tom Ford Oud Wood</h3>
-            <p className="text-sm font-bold">$250.00</p>
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-text-light dark:text-text-dark truncate">
+                        {item.tenSanPham}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Thương hiệu: {item.tenThuongHieu || 'N/A'}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Dung tích: {item.dungTichMl}ml • Nồng độ: {item.nongDo}
+                      </p>
+                      <p className="text-lg font-bold text-primary mt-1">
+                        {item.giaTaiThoiDiemMua.toLocaleString('vi-VN')}₫
+                      </p>
+                    </div>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const newQty = Math.max(0, item.soLuong - 1);
+                          updateItemQuantity(item.sanPhamId, newQty);
+                        }}
+                        disabled={updatingItem === item.sanPhamId}
+                        className="w-8 h-8 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                      >
+                        -
+                      </button>
+                      <span className="w-12 text-center font-medium">
+                        {updatingItem === item.sanPhamId ? '...' : item.soLuong}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const newQty = item.soLuong + 1;
+                          updateItemQuantity(item.sanPhamId, newQty);
+                        }}
+                        disabled={updatingItem === item.sanPhamId}
+                        className="w-8 h-8 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Subtotal */}
+                    <div className="text-right">
+                      <p className="font-bold text-lg text-text-light dark:text-text-dark">
+                        {(item.giaTaiThoiDiemMua * item.soLuong).toLocaleString('vi-VN')}₫
+                      </p>
+                    </div>
+
+                    {/* Remove Button */}
+                    <button
+                      onClick={() => removeItem(item.sanPhamId)}
+                      disabled={updatingItem === item.sanPhamId}
+                      className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                  </div>
+                </div>
+              );
+              })}
+            </div>
+
+            {/* Order Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white dark:bg-content-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sticky top-4">
+                <h3 className="text-lg font-semibold mb-4">Tóm tắt đơn hàng</h3>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between">
+                    <span>Tạm tính ({cart.chiTiet.length} sản phẩm):</span>
+                    <span className="font-medium">{calculateTotal().toLocaleString('vi-VN')}₫</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Phí vận chuyển:</span>
+                    <span className="font-medium">Miễn phí</span>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Tổng cộng:</span>
+                      <span className="text-primary">{calculateTotal().toLocaleString('vi-VN')}₫</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Link
+                  to="/thanh-toan"
+                  className="w-full bg-primary text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined">shopping_cart_checkout</span>
+                  Tiến hành thanh toán
+                </Link>
+
+                <div className="mt-4 text-center">
+                  <Link to="/products" className="text-primary hover:underline text-sm">
+                    Tiếp tục mua sắm
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
-          {/* Product Card 2 */}
-          <div className="flex flex-col items-center text-center group">
-            <div className="bg-center bg-no-repeat bg-cover rounded-lg w-full aspect-square mb-3" data-alt="Jo Malone perfume bottle" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBZzit1NWDgETuhxG6Ftql0Bjhm2_YMsXapK939bCwkEMUASemyk7r6kKSZ1wBtyyfsG2bZcpjv5-JjIhHfpbvf_bBujxDIpqNyMgjk1Dg5QQUpljjLxYTIR-C67HPFdSJysaIOiLlY9Pu5n7vwUvn2APJCvMFSivIiONLknzhSDJuLV3fSrEGIwyPMCYtIDVllZBH3xotQeBFIYvXUIQjp7lt3XiOXDI7p26e2BOMhHt9_y9KtcC04iCYPH69NFUuI4lIa9vyx_m8")` }}></div>
-            <h3 className="font-medium group-hover:text-primary transition-colors">Jo Malone London</h3>
-            <p className="text-sm font-bold">$140.00</p>
-          </div>
-          {/* Product Card 3 */}
-          <div className="flex flex-col items-center text-center group">
-            <div className="bg-center bg-no-repeat bg-cover rounded-lg w-full aspect-square mb-3" data-alt="Creed Aventus perfume bottle" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuAGkb4k9ZWTQs5VFr406HemeZUSsKIiu73fN1fUhShD1laBoQKFXwcZOcIbwgjumGsMeqinqI11sLaFdzTC9wmlKRx53DxmM3QnsRjQoezxlxu4SnjuyX-cNacX062DvioQeEgj20trkLlM99csfSeYYD2A-BWav-DvGEFmeLV-vXLrtt9TM4TfW1IBZEHSb7fLB8Mgp6Ugt7TjQFjqnTmy0W3IWxe3ZBgTPy_JkFiVfRDKNuq8neQjqQ5vhv5Uf7yNWjlg_yA1jEs")` }}></div>
-            <h3 className="font-medium group-hover:text-primary transition-colors">Creed Aventus</h3>
-            <p className="text-sm font-bold">$335.00</p>
-          </div>
-          {/* Product Card 4 */}
-          <div className="flex flex-col items-center text-center group">
-            <div className="bg-center bg-no-repeat bg-cover rounded-lg w-full aspect-square mb-3" data-alt="Le Labo Santal 33 perfume bottle" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCYdZQ_rxMAkKYcB0OGj7qacISZf1P0TQd1xLhXrmLdNNhC6oH0NF3wJy9hw9LGqoVEFUc15mpMujl8Hi5OapTwr52OxZeLnSgfqTX9zSk417WZUp8aCr5ZjgkaMP4mzT-mqUY2v8vZ4K8OkyOkXL5z5nt8IB1_k0Us5ztDYBkY-IZe6OhGEPXx5JR6VW9TjZHUj9FM6ZTsojFx5JDLaFa39oqof7Vx5CJDcdIBe1jUpMzjSYNv3IuIvjlHv7ecfkNzRc5gI8YtyMY")` }}></div>
-            <h3 className="font-medium group-hover:text-primary transition-colors">Le Labo Santal 33</h3>
-            <p className="text-sm font-bold">$192.00</p>
-          </div>
-        </div>
+        )}
       </div>
-    </main>
+    </div>
   );
 };
 

@@ -1,37 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../services/api';
 
 const POSPage = () => {
   const { staff } = useAuth();
 
-  // Sample product data - theo schema San_Pham table với đầy đủ fields
-  const [products] = useState([
-    { id_san_pham: 1, ten_san_pham: "Bleu de Chanel", mo_ta: "Nước hoa nam tính", url_hinh_anh: "https://placehold.co/400x400?text=Chanel", gia_ban: 150, dung_tich_ml: 100, nong_do: "EDP", so_luong_ton_kho: 10, id_danh_muc: 1, id_thuong_hieu: 1 },
-    { id_san_pham: 2, ten_san_pham: "Sauvage EDP", mo_ta: "Nước hoa nam tinh tế", url_hinh_anh: "https://placehold.co/400x400?text=Dior", gia_ban: 120, dung_tich_ml: 60, nong_do: "EDP", so_luong_ton_kho: 15, id_danh_muc: 1, id_thuong_hieu: 2 },
-    { id_san_pham: 3, ten_san_pham: "Versace Eros", mo_ta: "Nước hoa quyến rũ", url_hinh_anh: "https://placehold.co/400x400?text=Versace", gia_ban: 95, dung_tich_ml: 50, nong_do: "EDT", so_luong_ton_kho: 8, id_danh_muc: 1, id_thuong_hieu: 3 },
-    { id_san_pham: 4, ten_san_pham: "Tom Ford Oud Wood", mo_ta: "Nước hoa sang trọng", url_hinh_anh: "https://placehold.co/400x400?text=TomFord", gia_ban: 250, dung_tich_ml: 50, nong_do: "EDP", so_luong_ton_kho: 5, id_danh_muc: 1, id_thuong_hieu: 4 },
-    { id_san_pham: 5, ten_san_pham: "Creed Aventus", mo_ta: "Nước hoa huyền thoại", url_hinh_anh: "https://placehold.co/400x400?text=Creed", gia_ban: 350, dung_tich_ml: 100, nong_do: "EDP", so_luong_ton_kho: 3, id_danh_muc: 1, id_thuong_hieu: 5 },
-    { id_san_pham: 6, ten_san_pham: "Acqua di Gio", mo_ta: "Nước hoa tươi mát", url_hinh_anh: "https://placehold.co/400x400?text=Armani", gia_ban: 110, dung_tich_ml: 75, nong_do: "EDT", so_luong_ton_kho: 12, id_danh_muc: 1, id_thuong_hieu: 6 },
-    { id_san_pham: 7, ten_san_pham: "YSL Y EDP", mo_ta: "Nước hoa nữ tính", url_hinh_anh: "https://placehold.co/400x400?text=YSL", gia_ban: 130, dung_tich_ml: 50, nong_do: "EDP", so_luong_ton_kho: 7, id_danh_muc: 1, id_thuong_hieu: 7 },
-    { id_san_pham: 8, ten_san_pham: "Invictus", mo_ta: "Nước hoa thể thao", url_hinh_anh: "https://placehold.co/400x400?text=Paco", gia_ban: 90, dung_tich_ml: 100, nong_do: "EDT", so_luong_ton_kho: 20, id_danh_muc: 1, id_thuong_hieu: 8 },
-  ]);
-
-  // Brand and category data for display
-  const brands = {
-    1: "Chanel",
-    2: "Dior",
-    3: "Versace",
-    4: "Tom Ford",
-    5: "Creed",
-    6: "Giorgio Armani",
-    7: "YSL",
-    8: "Paco Rabanne"
-  };
-
-  const categories = {
-    1: "Nam giới"
-  };
+  const [products, setProducts] = useState([]);
+  const [brands, setBrands] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem('pos-cart');
@@ -46,10 +24,42 @@ const POSPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash', 'card', 'online'
   const [depositAmount, setDepositAmount] = useState('');
 
+  // Load products and brands on component mount
+  useEffect(() => {
+    loadProductsAndBrands();
+  }, []);
+
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('pos-cart', JSON.stringify(cart));
   }, [cart]);
+
+  const loadProductsAndBrands = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Load products and brands in parallel
+      const [productsData, brandsData] = await Promise.all([
+        api.getAllProducts(),
+        api.getBrands()
+      ]);
+
+      // Create brand mapping
+      const brandMap = {};
+      brandsData.forEach(brand => {
+        brandMap[brand.idThuongHieu] = brand.tenThuongHieu;
+      });
+
+      setProducts(productsData);
+      setBrands(brandMap);
+    } catch (err) {
+      setError('Không thể tải dữ liệu sản phẩm');
+      console.error('Error loading products/brands:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Add product to cart with database field names
   const addToCart = (product) => {
@@ -133,84 +143,83 @@ const POSPage = () => {
     setShowCheckout(true);
   };
 
-  // Complete sale with database schema and payment methods
-  const completeSale = () => {
+  // Complete sale with backend API integration
+  const completeSale = async () => {
     // Validation dựa trên phương thức thanh toán
     if (paymentMethod === 'cash' && cashReceivedNum < total) {
       alert('Số tiền nhận chưa đủ!');
       return;
     }
 
-    if (paymentMethod === 'deposit') {
-      const depositNum = parseFloat(depositAmount) || 0;
-      if (depositNum <= 0 || depositNum >= total) {
-        alert('Số tiền đặt cọc phải lớn hơn 0 và nhỏ hơn tổng tiền!');
-        return;
+    // No validation needed for deposit - backend auto-calculates 50%
+
+    try {
+      // Debug: Check staff data
+      console.log('Staff data:', staff);
+      console.log('Staff ID:', staff?.id_nhan_vien);
+
+      // Prepare items data for backend - matching ItemInput format
+      const itemsInput = cart.map(item => ({
+        sanPhamId: item.id_san_pham,
+        soLuong: item.quantity,
+        gia: item.gia_ban
+      }));
+
+      console.log('Items input:', itemsInput);
+      console.log('Payment method:', paymentMethod);
+      console.log('Customer name:', ten_khach_vang_lai);
+
+      let orderData;
+
+      // Call appropriate backend POS API based on payment method
+      if (paymentMethod === 'deposit') {
+        // Use POS Order API (deposit - 50% payment, wait for stock)
+        console.log('Calling createPosOrder with params:', {
+          employeeId: staff?.id_nhan_vien,
+          customerId: null,
+          customerName: ten_khach_vang_lai,
+          items: itemsInput
+        });
+        orderData = await api.createPosOrder(
+          staff?.id_nhan_vien,
+          null, // No customer ID for walk-in customers
+          ten_khach_vang_lai,
+          itemsInput
+        );
+      } else {
+        // Use POS Sale API (full payment, complete immediately)
+        console.log('Calling createPosBanLe with params:', {
+          employeeId: staff?.id_nhan_vien,
+          customerId: null,
+          customerName: ten_khach_vang_lai,
+          items: itemsInput
+        });
+        orderData = await api.createPosBanLe(
+          staff?.id_nhan_vien,
+          null, // No customer ID for walk-in customers
+          ten_khach_vang_lai,
+          itemsInput
+        );
       }
+
+      console.log('Order created successfully:', orderData);
+
+      // Show receipt with order data
+      setShowReceipt(true);
+      clearCart();
+      setShowCheckout(false);
+      setten_khach_vang_lai('');
+      setso_dien_thoai('');
+      setCashReceived('');
+      setPaymentMethod('cash');
+      setDepositAmount('');
+
+      alert('Đơn hàng đã được tạo thành công!');
+
+    } catch (error) {
+      console.error('Error creating POS order:', error);
+      alert('Không thể tạo đơn hàng: ' + error.message);
     }
-
-    // Generate order ID
-    const id_don_hang = `POS-${Date.now()}`;
-
-    // Determine payment status and operation status based on payment method
-    let trang_thai_thanh_toan, trang_thai_van_hanh, tien_dat_coc;
-
-    switch (paymentMethod) {
-      case 'cash':
-        trang_thai_thanh_toan = "Da_Thanh_Toan";
-        trang_thai_van_hanh = "Hoan_Thanh";
-        tien_dat_coc = 0;
-        break;
-      case 'card':
-      case 'online':
-        trang_thai_thanh_toan = "Da_Thanh_Toan";
-        trang_thai_van_hanh = "Hoan_Thanh";
-        tien_dat_coc = total; // Thanh toán đầy đủ online
-        break;
-      case 'deposit':
-        trang_thai_thanh_toan = "Da_Coc";
-        trang_thai_van_hanh = "Cho_Hang";
-        tien_dat_coc = parseFloat(depositAmount);
-        break;
-      default:
-        trang_thai_thanh_toan = "Da_Thanh_Toan";
-        trang_thai_van_hanh = "Hoan_Thanh";
-        tien_dat_coc = 0;
-    }
-
-    // Create Don_Hang record theo database schema
-    const donHang = {
-      id_don_hang,
-      id_nguoi_dung: null, // Khách vãng lai, không có tài khoản
-      id_nhan_vien: staff.id_nhan_vien, // Nhân viên xử lý đơn hàng
-      trang_thai_van_hanh,
-      trang_thai_thanh_toan,
-      tong_tien: total,
-      tien_dat_coc,
-      ten_khach_vang_lai,
-      ngay_dat_hang: new Date().toISOString(),
-      phuong_thuc_thanh_toan: paymentMethod, // Thêm field này để track phương thức
-      chi_tiet_don_hang: cart.map(item => ({
-        id_san_pham: item.id_san_pham,
-        so_luong: item.quantity,
-        gia_tai_thoi_diem_mua: item.gia_ban
-      }))
-    };
-
-    // Save order to localStorage for records (FUTURE: save to database)
-    const orders = JSON.parse(localStorage.getItem('pos-orders') || '[]');
-    orders.push(donHang);
-    localStorage.setItem('pos-orders', JSON.stringify(orders));
-
-    // Show receipt
-    setShowReceipt(true);
-    clearCart();
-    setShowCheckout(false);
-    setten_khach_vang_lai('');
-    setso_dien_thoai('');
-    setCashReceived('');
-    setPaymentMethod('cash');
-    setDepositAmount('');
   };
 
   // Print receipt (mock)
@@ -218,12 +227,44 @@ const POSPage = () => {
     window.print();
   };
 
+  // Show loading state while fetching data
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Đang tải dữ liệu sản phẩm...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <main className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Không thể tải dữ liệu</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={loadProductsAndBrands}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Thử lại
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   if (showReceipt) {
+    const isDepositOrder = paymentMethod === 'deposit';
+
     return (
       <main className="min-h-screen bg-background-light dark:bg-background-dark p-4">
         <div className="max-w-md mx-auto bg-white dark:bg-content-dark p-6 rounded-lg shadow-lg" id="receipt">
           <div className="text-center mb-4">
-            <h1 className="text-2xl font-bold">CỬA HÀNG NƯỚC HOA</h1>
+            <h1 className="text-2xl font-bold text-primary">CỬA HÀNG NƯỚC HOA</h1>
             <p className="text-sm text-gray-600">Đơn hàng #{Date.now()}</p>
           </div>
 
@@ -232,13 +273,18 @@ const POSPage = () => {
             {so_dien_thoai && <p><strong>SĐT:</strong> {so_dien_thoai}</p>}
             <p><strong>Nhân viên:</strong> {staff?.ho_ten} ({staff?.vai_tro})</p>
             <p><strong>Ngày:</strong> {new Date().toLocaleString('vi-VN')}</p>
+            <p><strong>Loại:</strong>
+              <span className={isDepositOrder ? "text-orange-600 font-bold" : "text-green-600 font-bold"}>
+                {isDepositOrder ? " ĐẶT CỌC 50%" : " THANH TOÁN ĐẦY ĐỦ"}
+              </span>
+            </p>
           </div>
 
           <div className="border-t border-b py-2 mb-4">
             {cart.map(item => (
               <div key={item.id_san_pham} className="flex justify-between text-sm mb-1">
                 <span>{item.ten_san_pham} x{item.quantity}</span>
-                <span>${(item.gia_ban * item.quantity).toFixed(2)}</span>
+                <span>{(item.gia_ban * item.quantity).toLocaleString('vi-VN')}₫</span>
               </div>
             ))}
           </div>
@@ -246,28 +292,55 @@ const POSPage = () => {
           <div className="space-y-1 text-sm mb-4">
             <div className="flex justify-between">
               <span>Tạm tính:</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{subtotal.toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex justify-between">
               <span>Thuế (10%):</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>{tax.toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex justify-between font-bold">
               <span>Tổng cộng:</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{total.toLocaleString('vi-VN')}₫</span>
             </div>
           </div>
 
-          <div className="border-t pt-2 mb-4 text-sm">
-            <div className="flex justify-between">
-              <span>Số tiền nhận:</span>
-              <span>${cashReceivedNum.toFixed(2)}</span>
+          {/* Payment details based on method */}
+          {isDepositOrder ? (
+            <div className="border-t pt-2 mb-4 text-sm bg-orange-50 dark:bg-orange-900/20 p-3 rounded">
+              <div className="flex justify-between font-bold text-orange-700 dark:text-orange-300">
+                <span>Đặt cọc (50%):</span>
+                <span>{(total * 0.5).toLocaleString('vi-VN')}₫</span>
+              </div>
+              <div className="flex justify-between text-orange-600 dark:text-orange-400">
+                <span>Còn lại:</span>
+                <span>{(total * 0.5).toLocaleString('vi-VN')}₫</span>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">
+                🏦 Hàng sẽ về sau 7-10 ngày. Nhân viên sẽ liên hệ thu phần còn lại.
+              </p>
             </div>
-            <div className="flex justify-between">
-              <span>Tiền thừa:</span>
-              <span>${change.toFixed(2)}</span>
+          ) : paymentMethod === 'cash' ? (
+            <div className="border-t pt-2 mb-4 text-sm">
+              <div className="flex justify-between">
+                <span>Số tiền nhận:</span>
+                <span>{cashReceivedNum.toLocaleString('vi-VN')}₫</span>
+              </div>
+              <div className="flex justify-between text-green-600 font-bold">
+                <span>Tiền thừa:</span>
+                <span>{change.toLocaleString('vi-VN')}₫</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="border-t pt-2 mb-4 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded">
+              <div className="flex justify-between font-bold text-green-700 dark:text-green-300">
+                <span>Thanh toán:</span>
+                <span>{total.toLocaleString('vi-VN')}₫</span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">
+                {paymentMethod === 'card' ? '💳 Thanh toán bằng thẻ tín dụng' : '📱 Thanh toán bằng ví điện tử'}
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <button
@@ -333,7 +406,7 @@ const POSPage = () => {
                   <h3 className="font-semibold text-sm mb-1 truncate">{product.ten_san_pham}</h3>
                   <p className="text-xs text-gray-500 mb-2">{brands[product.id_thuong_hieu]}</p>
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-green-600">${product.gia_ban}</span>
+                    <span className="font-bold text-green-600">{product.gia_ban.toLocaleString('vi-VN')}₫</span>
                     <span className="text-xs text-gray-500">Còn {product.so_luong_ton_kho}</span>
                   </div>
                 </div>
@@ -387,7 +460,7 @@ const POSPage = () => {
                     <div key={item.id_san_pham} className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex-1">
                         <p className="font-medium text-sm truncate">{item.ten_san_pham}</p>
-                        <p className="text-xs text-gray-500">${item.gia_ban}</p>
+                        <p className="text-xs text-gray-500">{item.gia_ban.toLocaleString('vi-VN')}₫</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -423,15 +496,15 @@ const POSPage = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Tạm tính:</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{subtotal.toLocaleString('vi-VN')}₫</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Thuế (10%):</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{tax.toLocaleString('vi-VN')}₫</span>
                   </div>
                   <div className="flex justify-between font-bold border-t pt-2">
                     <span>Tổng cộng:</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{total.toLocaleString('vi-VN')}₫</span>
                   </div>
                 </div>
 
@@ -455,64 +528,64 @@ const POSPage = () => {
               {/* Payment Method Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Phương thức thanh toán:</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value="cash"
                       checked={paymentMethod === 'cash'}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4"
                     />
                     <div>
-                      <span className="font-medium">💵 Tiền mặt</span>
-                      <p className="text-xs text-gray-500">Thanh toán ngay</p>
+                      <span className="font-medium text-lg">💵 Tiền mặt</span>
+                      <p className="text-sm text-gray-500">Thanh toán ngay - hoàn thành đơn hàng</p>
                     </div>
                   </label>
 
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value="card"
                       checked={paymentMethod === 'card'}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4"
                     />
                     <div>
-                      <span className="font-medium">💳 Thẻ</span>
-                      <p className="text-xs text-gray-500">Thanh toán thẻ</p>
+                      <span className="font-medium text-lg">💳 Thẻ tín dụng</span>
+                      <p className="text-sm text-gray-500">Thanh toán thẻ - hoàn thành đơn hàng</p>
                     </div>
                   </label>
 
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value="online"
                       checked={paymentMethod === 'online'}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4"
                     />
                     <div>
-                      <span className="font-medium">📱 Online</span>
-                      <p className="text-xs text-gray-500">Ví điện tử/ZaloPay</p>
+                      <span className="font-medium text-lg">📱 Ví điện tử</span>
+                      <p className="text-sm text-gray-500">ZaloPay, MoMo - hoàn thành đơn hàng</p>
                     </div>
                   </label>
 
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <label className="flex items-center p-4 border-2 border-orange-300 bg-orange-50 dark:bg-orange-900/20 rounded-lg cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value="deposit"
                       checked={paymentMethod === 'deposit'}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-2"
+                      className="mr-3 w-4 h-4"
                     />
                     <div>
-                      <span className="font-medium">🏦 Đặt cọc</span>
-                      <p className="text-xs text-gray-500">Đặt hàng trước</p>
+                      <span className="font-bold text-lg text-orange-600">🏦 ĐẶT CỌC 50%</span>
+                      <p className="text-sm text-orange-700 dark:text-orange-300">Đặt hàng trước - thanh toán 50% - chờ hàng về</p>
                     </div>
                   </label>
                 </div>
@@ -521,7 +594,7 @@ const POSPage = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span>Tổng tiền:</span>
-                  <span className="font-bold">${total.toFixed(2)}</span>
+                  <span className="font-bold">{total.toLocaleString('vi-VN')}₫</span>
                 </div>
 
                 {/* Conditional Fields Based on Payment Method */}
@@ -544,29 +617,22 @@ const POSPage = () => {
                     {cashReceivedNum >= total && (
                       <div className="flex justify-between text-sm">
                         <span>Tiền thừa:</span>
-                        <span className="font-bold text-green-600">${change.toFixed(2)}</span>
+                        <span className="font-bold text-green-600">{change.toLocaleString('vi-VN')}₫</span>
                       </div>
                     )}
                   </>
                 )}
 
                 {paymentMethod === 'deposit' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Số tiền đặt cọc:</label>
-                    <input
-                      type="number"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary bg-white dark:bg-background-dark"
-                      step="0.01"
-                      min="1"
-                      max={total - 1}
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Còn lại: ${(total - parseFloat(depositAmount || 0)).toFixed(2)}
-                    </p>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-orange-800 dark:text-orange-200">Đặt cọc (50%):</span>
+                      <span className="font-bold text-orange-900 dark:text-orange-100">{(total * 0.5).toLocaleString('vi-VN')}₫</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-orange-700 dark:text-orange-300">Còn lại:</span>
+                      <span className="font-semibold text-orange-800 dark:text-orange-200">{(total * 0.5).toLocaleString('vi-VN')}₫</span>
+                    </div>
                   </div>
                 )}
 
@@ -588,10 +654,7 @@ const POSPage = () => {
                 </button>
                 <button
                   onClick={completeSale}
-                  disabled={
-                    paymentMethod === 'cash' && cashReceivedNum < total ||
-                    paymentMethod === 'deposit' && (!depositAmount || parseFloat(depositAmount) <= 0)
-                  }
+                  disabled={paymentMethod === 'cash' && cashReceivedNum < total}
                   className="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
                 >
                   Hoàn thành

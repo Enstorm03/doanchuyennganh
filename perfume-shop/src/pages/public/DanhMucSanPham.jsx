@@ -1,89 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import ProductCard from '../../components/product/ProductCard';
 import api from '../../services/api';
 
-// Import ảnh (hoặc dùng link placeholder nếu chưa có đủ ảnh)
-import chanelImg from '../../assets/images/unnamed.png';
-import diorImg from '../../assets/images/dior.png';
-
-
-// BACKEND-COMMENT: Đây là phần quan trọng nhất của trang này.
-// Toàn bộ logic để hiển thị, lọc, sắp xếp sản phẩm sẽ nằm ở đây.
-// Bạn sẽ cần nhiều `useState` để quản lý trạng thái của trang.
-/*
-Ví dụ về các state cần quản lý:
-
-const [products, setProducts] = useState([]); // Dữ liệu sản phẩm lấy từ API
-const [loading, setLoading] = useState(true);
-
-// State cho bộ lọc
-const [selectedBrands, setSelectedBrands] = useState([]);
-const [priceRange, setPriceRange] = useState(10000000);
-const [selectedConcentrations, setSelectedConcentrations] = useState([]);
-
-// State cho sắp xếp
-const [sortBy, setSortBy] = useState('newest'); // 'newest', 'price_asc', 'price_desc'
-
-// State cho phân trang
-const [currentPage, setCurrentPage] = useState(1);
-const [totalPages, setTotalPages] = useState(1);
-*/
-
-// Bạn sẽ dùng `useEffect` để gọi API mỗi khi các state trên thay đổi.
-/*
-useEffect(() => {
-  setLoading(true);
-
-  // 1. Xây dựng URL API với các tham số (query parameters)
-  const params = new URLSearchParams();
-  params.append('page', currentPage);
-  params.append('sortBy', sortBy);
-  if (category) params.append('category', category); // category lấy từ useParams()
-  if (priceRange < 10000000) params.append('maxPrice', priceRange);
-  selectedBrands.forEach(brand => params.append('brand', brand));
-  selectedConcentrations.forEach(conc => params.append('concentration', conc));
-
-  const apiUrl = `/api/products?${params.toString()}`;
-
-  // 2. Gọi API
-  fetch(apiUrl)
-    .then(res => res.json())
-    .then(data => {
-      setProducts(data.products); // API nên trả về object chứa cả sản phẩm và thông tin phân trang
-      setTotalPages(data.totalPages);
-      setLoading(false);
-    })
-    .catch(error => {
-      console.error("Lỗi khi lấy dữ liệu:", error);
-      setLoading(false);
-    });
-
-}, [category, currentPage, sortBy, selectedBrands, priceRange, selectedConcentrations]); // Dependency array
-*/
-
-
 
 const CategoryPage = () => {
-  const [priceRange, setPriceRange] = useState(2500000); // State cho thanh trượt giá
+  const [priceRange, setPriceRange] = useState(10000000); // State cho thanh trượt giá
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { category } = useParams();
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [searchParams] = useSearchParams();
+  const categoryId = searchParams.get('category');
+  const brandId = searchParams.get('brand');
+  const searchQuery = searchParams.get('search');
 
-  let categoryName = "";
-  if (category === "men") categoryName = "Nam";
-  else if (category === "women") categoryName = "Nữ";
-  else categoryName = "Unisex";
+  // Filter states
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedConcentrations, setSelectedConcentrations] = useState([]);
+  const [maxPrice, setMaxPrice] = useState(10000000); // Show all products initially
+  const [sortBy, setSortBy] = useState('Mới nhất');
 
-  // Fetch products on component mount
+  const getCategoryName = (id) => {
+    const category = categories.find(cat => cat.idDanhMuc === parseInt(id));
+    return category ? category.tenDanhMuc : "Tất cả sản phẩm";
+  };
+
+  const getBrandName = (id) => {
+    const brand = brands.find(b => b.idThuongHieu === parseInt(id));
+    return brand ? brand.tenThuongHieu : "Tất cả thương hiệu";
+  };
+
+  // Fetch categories and brands on component mount
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const [fetchedCategories, fetchedBrands] = await Promise.all([
+          api.getCategories(),
+          api.getBrands()
+        ]);
+        setCategories(fetchedCategories);
+        setBrands(fetchedBrands);
+      } catch (err) {
+        console.error('Error fetching metadata:', err);
+      }
+    };
+
+    fetchMetadata();
+  }, []);
+
+  // Fetch products based on category, brand, or search
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
-        const fetchedProducts = await api.getAllProducts();
+        let fetchedProducts;
+        if (searchQuery) {
+          fetchedProducts = await api.searchProducts(searchQuery);
+        } else if (brandId) {
+          fetchedProducts = await api.searchProducts('', '', brandId);
+        } else if (categoryId) {
+          fetchedProducts = await api.searchProducts('', categoryId);
+        } else {
+          fetchedProducts = await api.getAllProducts();
+        }
         setProducts(fetchedProducts);
+        setFilteredProducts(fetchedProducts); // Set filtered products initially
       } catch (err) {
         setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');
         console.error('Error fetching products:', err);
@@ -93,7 +78,91 @@ const CategoryPage = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [categoryId, brandId, searchQuery]);
+
+  // Apply filters and sorting to products
+  useEffect(() => {
+    let filtered = [...products];
+
+    // Filter by brands
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter(product =>
+        selectedBrands.includes(product.id_thuong_hieu)
+      );
+    }
+
+    // Filter by price
+    filtered = filtered.filter(product => product.gia_ban <= maxPrice);
+
+    // Filter by concentration
+    if (selectedConcentrations.length > 0) {
+      filtered = filtered.filter(product => {
+        const nongDo = product.nong_do;
+        return selectedConcentrations.some(type => {
+          switch (type) {
+            case 'Eau de Toilette (EDT)':
+              return nongDo >= 5 && nongDo <= 15;
+            case 'Eau de Parfum (EDP)':
+              return nongDo >= 15 && nongDo <= 20;
+            case 'Extrait de Parfum':
+              return nongDo >= 20 && nongDo <= 40;
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    // Sort products
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'Giá: Tăng dần':
+          return a.gia_ban - b.gia_ban;
+        case 'Giá: Giảm dần':
+          return b.gia_ban - a.gia_ban;
+        case 'Bán chạy nhất':
+          // Assuming we have a sales field, otherwise keep original order
+          return (b.so_luong_da_ban || 0) - (a.so_luong_da_ban || 0);
+        case 'Mới nhất':
+        default:
+          // Assuming products have id or created date, sort by id descending for newest
+          return b.id_san_pham - a.id_san_pham;
+      }
+    });
+
+    setFilteredProducts(filtered);
+  }, [products, selectedBrands, maxPrice, selectedConcentrations, sortBy]);
+
+  // Handle brand checkbox change
+  const handleBrandChange = (brandId, checked) => {
+    if (checked) {
+      setSelectedBrands(prev => [...prev, brandId]);
+    } else {
+      setSelectedBrands(prev => prev.filter(id => id !== brandId));
+    }
+  };
+
+  // Handle concentration checkbox change
+  const handleConcentrationChange = (type, checked) => {
+    if (checked) {
+      setSelectedConcentrations(prev => [...prev, type]);
+    } else {
+      setSelectedConcentrations(prev => prev.filter(t => t !== type));
+    }
+  };
+
+  // Apply filters
+  const handleApplyFilters = () => {
+    setMaxPrice(priceRange);
+  };
+
+  // Clear filters
+  const handleClearFilters = () => {
+    setSelectedBrands([]);
+    setSelectedConcentrations([]);
+    setMaxPrice(10000000);
+    setPriceRange(10000000);
+  };
 
   return (
     <main className="container mx-auto px-4 py-8 min-h-screen bg-background-light dark:bg-background-dark">
@@ -106,7 +175,9 @@ const CategoryPage = () => {
           <span className="text-gray-800 dark:text-gray-200 text-sm font-medium">{`San pham`}</span>
         </div>
         <div className="flex flex-wrap justify-between items-center gap-3">
-          <p className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]}">{`Nước Hoa ${categoryName}`}</p>
+          <p className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]}">
+            {searchQuery ? `Kết quả tìm kiếm: "${searchQuery}"` : brandId ? getBrandName(brandId) : categoryId ? getCategoryName(categoryId) : "Tất cả sản phẩm"}
+          </p>
         </div>
       </div>
 
@@ -125,17 +196,27 @@ const CategoryPage = () => {
           <div className="sticky top-28 p-6 bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Bộ lọc</h3>
-              <button className="text-sm text-primary hover:underline">Xóa bộ lọc</button>
+              <button
+                onClick={handleClearFilters}
+                className="text-sm text-primary hover:underline"
+              >
+                Xóa bộ lọc
+              </button>
             </div>
 
             {/* Filter: Brand */}
             <div className="py-4 border-b border-gray-200 dark:border-gray-700">
               <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Thương hiệu</h4>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                {['Chanel', 'Dior', 'Gucci', 'Versace', 'Tom Ford', 'Creed'].map((brand) => (
-                   <label key={brand} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                      <input type="checkbox" className="form-checkbox rounded text-primary focus:ring-primary/50" />
-                      <span>{brand}</span>
+                {brands.map((brand) => (
+                   <label key={brand.idThuongHieu} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedBrands.includes(brand.idThuongHieu)}
+                        onChange={(e) => handleBrandChange(brand.idThuongHieu, e.target.checked)}
+                        className="form-checkbox rounded text-primary focus:ring-primary/50"
+                      />
+                      <span>{brand.tenThuongHieu}</span>
                    </label>
                 ))}
               </div>
@@ -163,7 +244,12 @@ const CategoryPage = () => {
               <div className="space-y-2">
                 {['Eau de Parfum (EDP)', 'Eau de Toilette (EDT)', 'Extrait de Parfum'].map((type) => (
                     <label key={type} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                        <input type="checkbox" className="form-checkbox rounded text-primary focus:ring-primary/50" />
+                        <input
+                          type="checkbox"
+                          checked={selectedConcentrations.includes(type)}
+                          onChange={(e) => handleConcentrationChange(type, e.target.checked)}
+                          className="form-checkbox rounded text-primary focus:ring-primary/50"
+                        />
                         <span>{type}</span>
                     </label>
                 ))}
@@ -172,7 +258,10 @@ const CategoryPage = () => {
 
             {/* Apply Button */}
             <div className="pt-6">
-              <button className="w-full h-10 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-bold hover:bg-opacity-90 transition-colors">
+              <button
+                onClick={handleApplyFilters}
+                className="w-full h-10 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-bold hover:bg-opacity-90 transition-colors"
+              >
                 Áp dụng
               </button>
             </div>
@@ -185,7 +274,7 @@ const CategoryPage = () => {
           {/* Sorting Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 p-4 bg-white dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark">
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {loading ? 'Đang tải...' : error ? 'Lỗi tải sản phẩm' : `Hiển thị ${products.length} sản phẩm`}
+              {loading ? 'Đang tải...' : error ? 'Lỗi tải sản phẩm' : `Hiển thị ${filteredProducts.length} sản phẩm`}
             </p>
             {/* BACKEND-COMMENT: Tương tự bộ lọc, việc thay đổi dropdown này sẽ cập nhật state `sortBy`.
                 Ví dụ: `<select onChange={(e) => setSortBy(e.target.value)} ...>`
@@ -193,7 +282,11 @@ const CategoryPage = () => {
             */}
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sắp xếp:</span>
-              <select className="form-select text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 focus:border-primary focus:ring-primary/50 py-1.5 pl-3 pr-8">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="form-select text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 focus:border-primary focus:ring-primary/50 py-1.5 pl-3 pr-8"
+              >
                 <option>Mới nhất</option>
                 <option>Bán chạy nhất</option>
                 <option>Giá: Tăng dần</option>
@@ -231,17 +324,17 @@ const CategoryPage = () => {
           {/* Product Grid */}
           {!loading && !error && (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <div className="col-span-full text-center py-12">
                   <p className="text-gray-500 dark:text-gray-400">Không có sản phẩm nào.</p>
                 </div>
               ) : (
-                products.map((product) => (
+                filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id_san_pham}
                     id_san_pham={product.id_san_pham}
                     ten_san_pham={product.ten_san_pham}
-                    gia_ban={product.gia_ban} 
+                    gia_ban={product.gia_ban}
                     url_hinh_anh={product.url_hinh_anh}
                     id_thuong_hieu={product.id_thuong_hieu}
                   />

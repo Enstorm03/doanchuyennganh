@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const DangNhapPage = () => {
   const [loginType, setLoginType] = useState('customer'); // 'customer' or 'staff'
   const [formData, setFormData] = useState({
-    ten_dang_nhap: '',
-    mat_khau_bam: ''
+    tenDangNhap: '',
+    matKhau: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const { loginUser, loginStaff } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+  }, [location.state]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -97,9 +105,9 @@ const DangNhapPage = () => {
               </label>
               <input
                 type="text"
-                id="ten_dang_nhap"
-                name="ten_dang_nhap"
-                value={formData.ten_dang_nhap}
+                id="tenDangNhap"
+                name="tenDangNhap"
+                value={formData.tenDangNhap}
                 onChange={handleInputChange}
                 className="form-input w-full h-12 rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark focus:border-primary focus:ring-primary/50"
                 placeholder="nhập tên đăng nhập"
@@ -111,19 +119,26 @@ const DangNhapPage = () => {
             <div>
               <div className="flex justify-between items-center mb-2">
                   <label htmlFor="mat_khau_bam" className="block text-sm font-medium text-text-subtle-light dark:text-text-subtle-dark">Mật khẩu</label>
-                  <Link to="#" className="text-sm text-primary hover:underline">Quên mật khẩu?</Link>
+                  
               </div>
               <input
                 type="password"
-                id="mat_khau_bam"
-                name="mat_khau_bam"
-                value={formData.mat_khau_bam}
+                id="matKhau"
+                name="matKhau"
+                value={formData.matKhau}
                 onChange={handleInputChange}
                 className="form-input w-full h-12 rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark focus:border-primary focus:ring-primary/50"
                 placeholder="••••••••"
                 required
               />
             </div>
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="text-green-600 text-sm text-center bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                {successMessage}
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (
@@ -150,30 +165,17 @@ const DangNhapPage = () => {
 
             {loginType === 'customer' && (
               <div className="text-center mt-4">
+                <Link to="#" className="text-sm text-primary hover:underline">Quên mật khẩu?</Link>
                 <p className="text-sm text-text-subtle-light dark:text-text-subtle-dark">
+                  
                   Chưa có tài khoản? <Link to="/register" className="font-medium text-primary hover:underline">Đăng ký ngay</Link>
                 </p>
               </div>
             )}
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-xs text-blue-800 dark:text-blue-200 font-medium mb-2">Tài khoản demo:</p>
-            <div className="text-xs space-y-1">
-              {loginType === 'customer' ? (
-                <>
-                  <p><strong>Khách hàng:</strong> customer / password</p>
-                  <p className="text-gray-600">(Dùng Nguoi_Dung table)</p>
-                </>
-              ) : (
-                <>
-                  <p><strong>Nhân viên:</strong> admin / admin123</p>
-                  <p className="text-gray-600">(Dùng Nhan_Vien table)</p>
-                </>
-              )}
-            </div>
-          </div>
+  
+          
         </div>
       </div>
     </main>

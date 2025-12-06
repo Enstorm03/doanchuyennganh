@@ -10,6 +10,7 @@ import ProductDetail from './pages/public/ChiTietSanPham';
 import CategoryPage from './pages/public/DanhMucSanPham';
 import GioHangPage from './pages/public/GioHang';
 import ThanhToanPage from './pages/public/ThanhToan';
+import LichSuDonHangPage from './pages/public/LichSuDonHang';
 import ThuongHieuPage from './pages/public/ThuongHieuPage';
 import POSPage from './pages/public/POSPage';
 
@@ -22,7 +23,10 @@ import DashboardPage from './pages/admin/DashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
+import AdminEmployeesPage from './pages/admin/AdminEmployeesPage';
+import AdminCustomersPage from './pages/admin/AdminCustomersPage';
 import AdminReportPage from './pages/admin/AdminReportPage';
+import AdminReturnsPage from './pages/admin/AdminReturnsPage';
 
 import './assets/styles/App.css';
 
@@ -37,6 +41,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<GioHangPage />} />
           <Route path="/thanh-toan" element={<ThanhToanPage />} />
+          <Route path="/lich-su-don-hang" element={<LichSuDonHangPage />} />
           <Route path="/brands" element={<ThuongHieuPage />} />
         </Route>
 
@@ -50,7 +55,10 @@ function App() {
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
+          <Route path="employees" element={<AdminEmployeesPage />} />
+          <Route path="customers" element={<AdminCustomersPage />} />
           <Route path="reports" element={<AdminReportPage />} />
+          <Route path="returns" element={<AdminReturnsPage />} />
           <Route path="pos" element={<POSPage />} />
         </Route>
       </Routes>

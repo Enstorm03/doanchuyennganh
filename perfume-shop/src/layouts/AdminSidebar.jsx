@@ -1,7 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const AdminSidebar = () => {
+  const { isAdmin } = useAuth();
+
   const navLinkClasses = ({ isActive }) =>
     `flex items-center gap-3 rounded-lg px-3 py-2 transition-all text-text-subtle-light dark:text-text-subtle-dark hover:text-text-light dark:hover:text-text-dark ${
       isActive
@@ -32,6 +35,22 @@ const AdminSidebar = () => {
               <span className="material-symbols-outlined">receipt_long</span>
               Đơn hàng
             </NavLink>
+            <NavLink to="/admin/returns" className={navLinkClasses}>
+              <span className="material-symbols-outlined">assignment_return</span>
+              Đổi trả
+            </NavLink>
+            {isAdmin() && (
+              <>
+                <NavLink to="/admin/employees" className={navLinkClasses}>
+                  <span className="material-symbols-outlined">group</span>
+                  Nhân viên
+                </NavLink>
+                <NavLink to="/admin/customers" className={navLinkClasses}>
+                  <span className="material-symbols-outlined">people</span>
+                  Khách hàng
+                </NavLink>
+              </>
+            )}
             <NavLink to="/admin/reports" className={navLinkClasses}>
               <span className="material-symbols-outlined">monitoring</span>
               Báo cáo
