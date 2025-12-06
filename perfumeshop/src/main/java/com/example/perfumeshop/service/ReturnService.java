@@ -40,7 +40,7 @@ public class ReturnService {
     public PhieuDoiTra create(Integer idDonHang, Integer idNguoiDung, String lyDo) {
         DonHang dh = donHangRepository.findById(idDonHang)
                 .orElseThrow(() -> new BusinessException("Đơn hàng không tồn tại"));
-        // Chỉ nhận đổi trả trong 7 ngày và đơn đã hoàn thành
+        // Chỉ nhận đổi trả trongs 7 ngày và đơn đã hoàn thành
         if (dh.getNgayDatHang() == null) {
             throw new BusinessException("Đơn hàng thiếu thời gian đặt hàng");
         }
