@@ -36,21 +36,21 @@ const LichSuDonHangPage = () => {
       navigate('/login', { state: { message: 'Vui lòng đăng nhập để xem lịch sử đơn hàng.' } });
       return;
     }
-  }, [isUser, navigate]);
+  }, [isUser, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch user orders
   useEffect(() => {
     if (isUser() && user) {
       fetchOrders();
     }
-  }, [user, isUser]);
+  }, [user, isUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check return status for eligible orders
   useEffect(() => {
     if (orders.length > 0 && user) {
       checkReturnStatuses();
     }
-  }, [orders, user]);
+  }, [orders, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkReturnStatuses = async () => {
     const statuses = {};
@@ -83,20 +83,6 @@ const LichSuDonHangPage = () => {
       console.error('Error fetching orders:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Giỏ hàng': return 'text-gray-500';
-      case 'Đang chờ': return 'text-blue-600';
-      case 'Đã xác nhận': return 'text-green-600';
-      case 'Đang giao hàng': return 'text-purple-600';
-      case 'Hoàn thành': return 'text-emerald-600';
-      case 'Chờ hàng': return 'text-orange-600';
-      case 'Đã hủy': return 'text-red-600';
-      default: return 'text-gray-500';
     }
   };
 
@@ -163,35 +149,6 @@ const LichSuDonHangPage = () => {
   };
 
   // Return functionality
-  const canRequestReturn = async (order) => {
-    if (order.trangThaiVanHanh !== 'Hoàn thành') {
-      return false;
-    }
-
-    // Check if order is within 7 days
-    if (!order.ngayDatHang) {
-      return false;
-    }
-
-    const orderDate = new Date(order.ngayDatHang);
-    const now = new Date();
-    const diffTime = Math.abs(now - orderDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays > 7) {
-      return false;
-    }
-
-    // Check if order already has a return request
-    try {
-      const existingReturn = await api.checkOrderReturnStatus(order.idDonHang, user.id_nguoi_dung);
-      return existingReturn === null; // Only allow if no existing return request
-    } catch (error) {
-      console.error('Error checking return status:', error);
-      return false; // On error, don't allow return request
-    }
-  };
-
   const openReturnModal = (order) => {
     setReturningOrder(order);
     setReturnData({ lyDo: '' });

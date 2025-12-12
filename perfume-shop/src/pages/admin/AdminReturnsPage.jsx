@@ -60,15 +60,6 @@ const AdminReturnsPage = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Chờ duyệt': return 'text-yellow-600';
-      case 'Đã duyệt': return 'text-green-600';
-      case 'Từ chối': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
   const getStatusBadgeColor = (status) => {
     switch (status) {
       case 'Chờ duyệt': return 'bg-yellow-100 text-yellow-800';

@@ -9,7 +9,6 @@ const AdminEmployeesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
   const [formData, setFormData] = useState({
     tenDangNhap: '',
     matKhau: '',

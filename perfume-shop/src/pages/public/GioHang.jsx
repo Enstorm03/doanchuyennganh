@@ -16,7 +16,7 @@ const GioHangPage = () => {
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCart = async () => {
     try {

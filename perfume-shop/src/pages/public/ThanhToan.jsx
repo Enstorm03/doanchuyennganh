@@ -378,7 +378,6 @@ const ThanhToanPage = () => {
               <h3 className="text-lg font-semibold mb-4">Sản phẩm trong đơn hàng</h3>
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {itemsToShow.map((item) => {
-                  const itemData = isPreOrder ? item : item; // preOrder uses different field names
                   return (
                     <div key={isPreOrder ? item.id_san_pham : item.idSanPham} className="flex items-center gap-4 py-2">
                       <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">

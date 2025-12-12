@@ -49,7 +49,7 @@ const AdminOrderDetailPage = () => {
 
   useEffect(() => {
     fetchOrderDetails();
-  }, [orderId]);
+  }, [orderId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchOrderDetails = async () => {
     try {

@@ -114,7 +114,7 @@ const ChiTietSanPham = () => {
   useEffect(() => {
     fetchProductDetail();
     fetchBrands();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProductDetail = async () => {
     try {

@@ -92,18 +92,6 @@ const DashboardPage = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Hoàn thành': return 'text-green-600';
-      case 'Đang giao hàng': return 'text-blue-600';
-      case 'Đang chờ': return 'text-yellow-600';
-      case 'Đã xác nhận': return 'text-purple-600';
-      case 'Chờ hàng': return 'text-orange-600';
-      case 'Đã hủy': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
   const getStatusBadgeColor = (status) => {
     switch (status) {
       case 'Hoàn thành': return 'bg-green-100 text-green-800';

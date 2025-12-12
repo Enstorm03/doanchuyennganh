@@ -102,9 +102,9 @@ const CategoryPage = () => {
           switch (type) {
             case 'Eau de Toilette (EDT)':
               return nongDo >= 5 && nongDo <= 15;
-            case 'Eau de Parfum (EDP)':
+            case 'Eau de Parfum (EDP )':
               return nongDo >= 15 && nongDo <= 20;
-            case 'Extrait de Parfum':
+            case 'Extrait de Parfum ':
               return nongDo >= 20 && nongDo <= 40;
             default:
               return false;
@@ -242,7 +242,7 @@ const CategoryPage = () => {
             <div className="py-4 border-b border-gray-200 dark:border-gray-700">
               <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Nồng độ</h4>
               <div className="space-y-2">
-                {['Eau de Parfum (EDP)', 'Eau de Toilette (EDT)', 'Extrait de Parfum'].map((type) => (
+                {['Eau de Parfum (EDP 5-15%)', 'Eau de Toilette (EDT 15-20%)', 'Extrait de Parfum 20-40%'].map((type) => (
                     <label key={type} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                         <input
                           type="checkbox"

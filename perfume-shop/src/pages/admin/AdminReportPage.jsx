@@ -33,7 +33,7 @@ const AdminReportPage = () => {
 
   useEffect(() => {
     fetchReportData();
-  }, [dateRange]);
+  }, [dateRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchReportData = async () => {
     try {
@@ -41,10 +41,8 @@ const AdminReportPage = () => {
       setError('');
 
       // Fetch all required data
-      const [ordersData, productsData, customersData] = await Promise.all([
-        api.getOrders(),
-        api.getAllProducts(),
-        api.getCustomers()
+      const [ordersData] = await Promise.all([
+        api.getOrders()
       ]);
 
       // Filter orders by date range

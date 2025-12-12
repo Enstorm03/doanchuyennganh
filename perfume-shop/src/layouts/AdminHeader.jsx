@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 const AdminHeader = () => {
-  const { staff, logout } = useAuth();
   const [pendingOrders, setPendingOrders] = useState(0);
   const [lowStockItems, setLowStockItems] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -45,10 +43,6 @@ const AdminHeader = () => {
     const interval = setInterval(loadDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleLogout = () => {
-    logout();
-  };
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-surface-light dark:bg-surface-dark px-4 lg:h-[60px] lg:px-6">

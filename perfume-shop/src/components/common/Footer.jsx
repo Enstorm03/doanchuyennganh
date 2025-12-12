@@ -8,33 +8,33 @@ const Footer = ({ brandName = "a" }) => {
               <div className="text-primary text-2xl">
                 <span className="material-symbols-outlined"></span>
               </div>
-              <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]"></h2>
+              <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]">{brandName}</h2>
             </div>
             <p className="mt-4 text-subtle-light dark:text-subtle-dark text-sm">Discover your signature scent with our curated collection of luxury perfumes.</p>
           </div>
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider">Shop</h3>
             <ul className="mt-4 space-y-2">
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Women's</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Men's</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Brands</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">New Arrivals</a></li>
+              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="/products">Women's</a></li>
+              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="/products">Men's</a></li>
+              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="/brands">Brands</a></li>
+              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="/products">New Arrivals</a></li>
             </ul>
           </div>
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider">About</h3>
             <ul className="mt-4 space-y-2">
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Our Story</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Contact Us</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">FAQs</a></li>
+              <li><button className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors bg-transparent border-none cursor-pointer">Our Story</button></li>
+              <li><button className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors bg-transparent border-none cursor-pointer">Contact Us</button></li>
+              <li><button className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors bg-transparent border-none cursor-pointer">FAQs</button></li>
             </ul>
           </div>
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider">Support</h3>
             <ul className="mt-4 space-y-2">
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Shipping & Returns</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
-              <li><a className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+              <li><button className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors bg-transparent border-none cursor-pointer">Shipping & Returns</button></li>
+              <li><button className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors bg-transparent border-none cursor-pointer">Privacy Policy</button></li>
+              <li><button className="text-sm text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors bg-transparent border-none cursor-pointer">Terms of Service</button></li>
             </ul>
           </div>
         </div>

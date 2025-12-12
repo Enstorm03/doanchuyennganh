@@ -22,7 +22,6 @@ const POSPage = () => {
   const [cashReceived, setCashReceived] = useState('');
   const [showReceipt, setShowReceipt] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash', 'card', 'online'
-  const [depositAmount, setDepositAmount] = useState('');
 
   // Load products and brands on component mount
   useEffect(() => {
@@ -212,7 +211,6 @@ const POSPage = () => {
       setso_dien_thoai('');
       setCashReceived('');
       setPaymentMethod('cash');
-      setDepositAmount('');
 
       alert('Đơn hàng đã được tạo thành công!');
 
