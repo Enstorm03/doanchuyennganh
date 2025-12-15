@@ -23,6 +23,9 @@ const POSPage = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash', 'card', 'online'
 
+  // State for receipt data
+  const [receiptData, setReceiptData] = useState(null);
+
   // Load products and brands on component mount
   useEffect(() => {
     loadProductsAndBrands();
@@ -203,6 +206,19 @@ const POSPage = () => {
 
       console.log('Order created successfully:', orderData);
 
+      // Save receipt data before clearing states
+      setReceiptData({
+        customerName: ten_khach_vang_lai,
+        customerPhone: so_dien_thoai,
+        paymentMethod: paymentMethod,
+        cart: [...cart], // copy current cart
+        subtotal: subtotal,
+        tax: tax,
+        total: total,
+        cashReceived: cashReceivedNum,
+        change: change
+      });
+
       // Show receipt with order data
       setShowReceipt(true);
       clearCart();
@@ -255,8 +271,8 @@ const POSPage = () => {
     );
   }
 
-  if (showReceipt) {
-    const isDepositOrder = paymentMethod === 'deposit';
+  if (showReceipt && receiptData) {
+    const isDepositOrder = receiptData.paymentMethod === 'deposit';
 
     return (
       <main className="min-h-screen bg-background-light dark:bg-background-dark p-4">
@@ -267,8 +283,8 @@ const POSPage = () => {
           </div>
 
           <div className="mb-4">
-            <p><strong>Khách hàng:</strong> {ten_khach_vang_lai}</p>
-            {so_dien_thoai && <p><strong>SĐT:</strong> {so_dien_thoai}</p>}
+            <p><strong>Khách hàng:</strong> {receiptData.customerName}</p>
+            {receiptData.customerPhone && <p><strong>SĐT:</strong> {receiptData.customerPhone}</p>}
             <p><strong>Nhân viên:</strong> {staff?.ho_ten} ({staff?.vai_tro})</p>
             <p><strong>Ngày:</strong> {new Date().toLocaleString('vi-VN')}</p>
             <p><strong>Loại:</strong>
@@ -279,7 +295,7 @@ const POSPage = () => {
           </div>
 
           <div className="border-t border-b py-2 mb-4">
-            {cart.map(item => (
+            {receiptData.cart.map(item => (
               <div key={item.id_san_pham} className="flex justify-between text-sm mb-1">
                 <span>{item.ten_san_pham} x{item.quantity}</span>
                 <span>{(item.gia_ban * item.quantity).toLocaleString('vi-VN')}₫</span>
@@ -290,15 +306,15 @@ const POSPage = () => {
           <div className="space-y-1 text-sm mb-4">
             <div className="flex justify-between">
               <span>Tạm tính:</span>
-              <span>{subtotal.toLocaleString('vi-VN')}₫</span>
+              <span>{receiptData.subtotal.toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex justify-between">
               <span>Thuế (10%):</span>
-              <span>{tax.toLocaleString('vi-VN')}₫</span>
+              <span>{receiptData.tax.toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex justify-between font-bold">
               <span>Tổng cộng:</span>
-              <span>{total.toLocaleString('vi-VN')}₫</span>
+              <span>{receiptData.total.toLocaleString('vi-VN')}₫</span>
             </div>
           </div>
 
@@ -307,35 +323,35 @@ const POSPage = () => {
             <div className="border-t pt-2 mb-4 text-sm bg-orange-50 dark:bg-orange-900/20 p-3 rounded">
               <div className="flex justify-between font-bold text-orange-700 dark:text-orange-300">
                 <span>Đặt cọc (50%):</span>
-                <span>{(total * 0.5).toLocaleString('vi-VN')}₫</span>
+                <span>{(receiptData.total * 0.5).toLocaleString('vi-VN')}₫</span>
               </div>
               <div className="flex justify-between text-orange-600 dark:text-orange-400">
                 <span>Còn lại:</span>
-                <span>{(total * 0.5).toLocaleString('vi-VN')}₫</span>
+                <span>{(receiptData.total * 0.5).toLocaleString('vi-VN')}₫</span>
               </div>
               <p className="text-xs text-orange-600 mt-1">
                 🏦 Hàng sẽ về sau 7-10 ngày. Nhân viên sẽ liên hệ thu phần còn lại.
               </p>
             </div>
-          ) : paymentMethod === 'cash' ? (
+          ) : receiptData.paymentMethod === 'cash' ? (
             <div className="border-t pt-2 mb-4 text-sm">
               <div className="flex justify-between">
                 <span>Số tiền nhận:</span>
-                <span>{cashReceivedNum.toLocaleString('vi-VN')}₫</span>
+                <span>{receiptData.cashReceived.toLocaleString('vi-VN')}₫</span>
               </div>
               <div className="flex justify-between text-green-600 font-bold">
                 <span>Tiền thừa:</span>
-                <span>{change.toLocaleString('vi-VN')}₫</span>
+                <span>{receiptData.change.toLocaleString('vi-VN')}₫</span>
               </div>
             </div>
           ) : (
             <div className="border-t pt-2 mb-4 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded">
               <div className="flex justify-between font-bold text-green-700 dark:text-green-300">
                 <span>Thanh toán:</span>
-                <span>{total.toLocaleString('vi-VN')}₫</span>
+                <span>{receiptData.total.toLocaleString('vi-VN')}₫</span>
               </div>
               <p className="text-xs text-green-600 mt-1">
-                {paymentMethod === 'card' ? '💳 Thanh toán bằng thẻ tín dụng' : '📱 Thanh toán bằng ví điện tử'}
+                {receiptData.paymentMethod === 'card' ? '💳 Thanh toán bằng thẻ tín dụng' : '📱 Thanh toán bằng ví điện tử'}
               </p>
             </div>
           )}
@@ -348,7 +364,10 @@ const POSPage = () => {
               In hóa đơn
             </button>
             <button
-              onClick={() => setShowReceipt(false)}
+              onClick={() => {
+                setShowReceipt(false);
+                setReceiptData(null);
+              }}
               className="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600"
             >
               Bán hàng mới
