@@ -10,9 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/pos")
 @CrossOrigin(origins = "*")
@@ -23,28 +20,27 @@ public class PosController {
 
     @PostMapping("/ban-le")
     public ResponseEntity<DonHang> banLe(@Valid @RequestBody PosBanLeRequest req) {
-        List<DonHangService.ItemInput> items = req.getItems().stream()
-                .map(this::mapItem)
-                .collect(Collectors.toList());
+        // Không cần map nữa, truyền thẳng req.getItems() vào vì nó chính là List<PosItemRequest>
         DonHang dh = donHangService.createPosBanLe(
-                req.getNhanVienId(), req.getKhachHangId(), req.getTenKhachVangLai(), items
+                req.getNhanVienId(),
+                req.getKhachHangId(),
+                req.getTenKhachVangLai(),
+                req.getItems()
         );
         return ResponseEntity.ok(dh);
     }
 
     @PostMapping("/order")
     public ResponseEntity<DonHang> order(@Valid @RequestBody PosOrderRequest req) {
-        List<DonHangService.ItemInput> items = req.getItems().stream()
-                .map(this::mapItem)
-                .collect(Collectors.toList());
+        // Tương tự, truyền thẳng items vào
         DonHang dh = donHangService.createPosOrder(
-                req.getNhanVienId(), req.getKhachHangId(), req.getTenKhachVangLai(), items
+                req.getNhanVienId(),
+                req.getKhachHangId(),
+                req.getTenKhachVangLai(),
+                req.getItems()
         );
         return ResponseEntity.ok(dh);
     }
 
-    private DonHangService.ItemInput mapItem(PosItemRequest it) {
-        return new DonHangService.ItemInput(it.getSanPhamId(), it.getSoLuong(), it.getGia());
-    }
-
+    // Đã xóa hàm private mapItem() vì không còn cần thiết
 }

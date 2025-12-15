@@ -8,6 +8,7 @@ import com.example.perfumeshop.repository.DonHangRepository;
 import com.example.perfumeshop.repository.SanPhamRepository;
 import com.example.perfumeshop.dto.DonHangHistoryDto;
 import com.example.perfumeshop.dto.ChiTietDonHangDto;
+import com.example.perfumeshop.dto.PosItemRequest; // Đã thêm import này
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -112,7 +113,7 @@ public class DonHangService {
         if (!TT_DA_XAC_NHAN.equals(dh.getTrangThaiVanHanh())) {
             throw new BusinessException("Chỉ chuyển 'Đang giao hàng' từ 'Đã xác nhận'");
         }
-        // Schema chưa có cột tracking, chỉ cập nhật trạng thái
+        // chỉ cập nhật trạng thái
         dh.setTrangThaiVanHanh(TT_DANG_GIAO);
         dh.setMaVanDon(maVanDon);
         return donHangRepository.save(dh);
@@ -163,7 +164,7 @@ public class DonHangService {
     // Mốc 2: POS bán lẻ (Hàng có sẵn) - tạo đơn hoàn thành ngay, trừ kho, đã thanh toán
     @Transactional
     public DonHang createPosBanLe(Integer nhanVienId, Integer khachHangId, String tenKhachVangLai,
-                                  List<ItemInput> itemsInput) {
+                                  List<PosItemRequest> itemsInput) { // Đã sửa thành PosItemRequest
         if (itemsInput == null || itemsInput.isEmpty()) {
             throw new BusinessException("Danh sách sản phẩm trống");
         }
@@ -179,7 +180,7 @@ public class DonHangService {
         List<ChiTietDonHang> ctList = new ArrayList<>();
 
         // Kiểm tra tồn kho trước, sau đó trừ kho
-        for (ItemInput in : itemsInput) {
+        for (PosItemRequest in : itemsInput) {
             SanPham sp = sanPhamRepository.findById(in.getSanPhamId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại: " + in.getSanPhamId()));
             int ton = sp.getSoLuongTonKho() == null ? 0 : sp.getSoLuongTonKho();
@@ -188,7 +189,7 @@ public class DonHangService {
             }
         }
 
-        for (ItemInput in : itemsInput) {
+        for (PosItemRequest in : itemsInput) {
             SanPham sp = sanPhamRepository.findById(in.getSanPhamId()).orElseThrow();
             // trừ kho
             sp.setSoLuongTonKho((sp.getSoLuongTonKho() == null ? 0 : sp.getSoLuongTonKho()) - in.getSoLuong());
@@ -208,14 +209,13 @@ public class DonHangService {
         dh.setTienDatCoc(BigDecimal.ZERO);
         dh.setChiTietDonHangs(ctList);
         dh.setNgayHoanThanh(LocalDateTime.now());
-        DonHang saved = donHangRepository.save(dh);
-        return saved;
+        return donHangRepository.save(dh);
     }
 
     // Mốc 2: POS Order (Đặt cọc 50%), không trừ kho, trạng thái Chờ hàng, thanh toán = Đã cọc
     @Transactional
     public DonHang createPosOrder(Integer nhanVienId, Integer khachHangId, String tenKhachVangLai,
-                                  List<ItemInput> itemsInput) {
+                                  List<PosItemRequest> itemsInput) { // Đã sửa thành PosItemRequest
         if (itemsInput == null || itemsInput.isEmpty()) {
             throw new BusinessException("Danh sách sản phẩm trống");
         }
@@ -228,7 +228,7 @@ public class DonHangService {
 
         BigDecimal tong = BigDecimal.ZERO;
         List<ChiTietDonHang> ctList = new ArrayList<>();
-        for (ItemInput in : itemsInput) {
+        for (PosItemRequest in : itemsInput) {
             SanPham sp = sanPhamRepository.findById(in.getSanPhamId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại: " + in.getSanPhamId()));
             ChiTietDonHang ct = new ChiTietDonHang();
@@ -242,9 +242,10 @@ public class DonHangService {
         dh.setTongTien(tong);
         dh.setTienDatCoc(tong.multiply(new BigDecimal("0.5")));
         dh.setChiTietDonHangs(ctList);
-        DonHang saved = donHangRepository.save(dh);
-        return saved;
-    } @Transactional
+        return donHangRepository.save(dh);
+    }
+
+    @Transactional
     public DonHang daThuTienConLai(Integer id) {
         DonHang dh = getById(id);
         if (!TT_CHO_HANG.equals(dh.getTrangThaiVanHanh()) || !"Đã cọc".equals(dh.getTrangThaiThanhToan())) {
@@ -254,6 +255,7 @@ public class DonHangService {
         dh.setTrangThaiThanhToan("Đã thanh toán");
         return donHangRepository.save(dh);
     }
+
     @Transactional
     public DonHang capNhatNguoiNhan(Integer id, String tenNguoiNhan, String diaChiGiaoHang) {
         DonHang dh = getById(id);
@@ -266,17 +268,5 @@ public class DonHangService {
         return donHangRepository.save(dh);
     }
 
-    // DTO nội bộ cho service POS
-    public static class ItemInput {
-        private Integer sanPhamId;
-        private Integer soLuong;
-        private BigDecimal gia;
-
-        public ItemInput(Integer sanPhamId, Integer soLuong, BigDecimal gia) {
-            this.sanPhamId = sanPhamId; this.soLuong = soLuong; this.gia = gia;
-        }
-        public Integer getSanPhamId() { return sanPhamId; }
-        public Integer getSoLuong() { return soLuong; }
-        public BigDecimal getGia() { return gia; }
-    }
+    // Đã xóa class ItemInput
 }
