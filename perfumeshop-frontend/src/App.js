@@ -9,8 +9,8 @@ import HomePage from './pages/public/TrangChu';
 import ProductDetail from './pages/public/ChiTietSanPham';
 import CategoryPage from './pages/public/DanhMucSanPham';
 import GioHangPage from './pages/public/GioHang';
-import ThanhToanPage from './pages/public/ThanhToan';
-import LichSuDonHangPage from './pages/public/LichSuDonHang';
+import ThanhToanPage from './pages/public/checkout/ThanhToanPage';
+import LichSuDonHangPage from './pages/public/LichSuDonHangPage';
 import ThuongHieuPage from './pages/public/ThuongHieuPage';
 import POSPage from './pages/public/POSPage';
 

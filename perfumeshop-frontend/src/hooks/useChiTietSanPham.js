@@ -1,0 +1,146 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import {
+  formatCartItem,
+  createPreOrderData,
+  getRelatedProducts,
+  createBrandMap
+} from '../utils/productUtils';
+
+const useChiTietSanPham = (productId) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [brandDetails, setBrandDetails] = useState({});
+  const [cartLoading, setCartLoading] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+
+  const fetchRelatedProducts = useCallback(async (brandId) => {
+    try {
+      const allProducts = await api.getAllProducts();
+      const related = getRelatedProducts(allProducts, productId, brandId);
+      setRelatedProducts(related);
+    } catch (err) {
+      console.error('Error fetching related products:', err);
+    }
+  }, [productId]);
+
+  const fetchProductDetail = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const productData = await api.getProductById(parseInt(productId));
+      setProduct(productData);
+      await fetchRelatedProducts(productData.id_thuong_hieu);
+    } catch (err) {
+      setError('Không thể tải thông tin sản phẩm');
+      console.error('Error fetching product:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [productId, fetchRelatedProducts]);
+
+  useEffect(() => {
+    fetchProductDetail();
+    fetchBrands();
+  }, [fetchProductDetail]);
+
+  const fetchBrands = async () => {
+    try {
+      const brands = await api.getBrands();
+      const brandMap = createBrandMap(brands);
+      setBrandDetails(brandMap);
+    } catch (err) {
+      console.error('Error fetching brands:', err);
+    }
+  };
+
+  const processCartAction = async (actionType) => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để thực hiện thao tác này');
+      return;
+    }
+
+    if (quantity > product.so_luong_ton_kho) {
+      alert('Số lượng vượt quá tồn kho');
+      return;
+    }
+
+    try {
+      setCartLoading(true);
+
+      if (actionType === 'add_to_cart') {
+        const cartItem = formatCartItem(product, quantity);
+        cartItem.userId = user.id_nguoi_dung;
+
+        await api.addCartItem(cartItem);
+        alert('Đã thêm sản phẩm vào giỏ hàng!');
+      } else if (actionType === 'buy_now') {
+        const cartItem = formatCartItem(product, quantity);
+        cartItem.userId = user.id_nguoi_dung;
+
+        await api.addCartItem(cartItem);
+        navigate('/thanh-toan');
+      } else if (actionType === 'pre_order') {
+        const preOrderData = createPreOrderData(product, quantity);
+        localStorage.setItem('pre-order-data', JSON.stringify(preOrderData));
+        navigate('/thanh-toan');
+      }
+    } catch (error) {
+      console.error('Cart action error:', error);
+      alert('Không thể thực hiện thao tác: ' + error.message);
+    } finally {
+      setCartLoading(false);
+    }
+  };
+
+  const updateQuantity = (newQuantity) => {
+    const maxStock = product?.so_luong_ton_kho || 999;
+    const validatedQuantity = Math.max(1, Math.min(newQuantity, maxStock));
+    setQuantity(validatedQuantity);
+  };
+
+  const incrementQuantity = () => {
+    updateQuantity(quantity + 1);
+  };
+
+  const decrementQuantity = () => {
+    updateQuantity(quantity - 1);
+  };
+
+  const getStockStatus = () => {
+    if (!product) return { status: 'loading', label: 'Đang tải...' };
+    if (product.so_luong_ton_kho === 0) return { status: 'out_of_stock', label: 'Hết hàng' };
+    if (product.so_luong_ton_kho < 10) return { status: 'low_stock', label: 'Sắp hết hàng' };
+    return { status: 'in_stock', label: 'Còn hàng' };
+  };
+
+  const getBrandName = () => {
+    return brandDetails[product?.id_thuong_hieu] || 'N/A';
+  };
+
+  return {
+    product,
+    loading,
+    error,
+    quantity,
+    brandDetails,
+    cartLoading,
+    relatedProducts,
+    processCartAction,
+    updateQuantity,
+    incrementQuantity,
+    decrementQuantity,
+    getStockStatus,
+    getBrandName,
+    fetchProductDetail
+  };
+};
+
+export default useChiTietSanPham;
