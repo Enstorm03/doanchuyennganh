@@ -10,6 +10,7 @@ const OrderActions = ({
   onCancelOrder,
   onUpdateRecipient,
   onPaymentCollected,
+  onUpdatePaymentStatus,
   setShowConfirmDialog,
   setShowShipDialog,
   setShowTrackingDialog,
@@ -50,6 +51,17 @@ const OrderActions = ({
           </>
         )}
 
+        {/* Payment status update button for unpaid orders */}
+        {order.trangThaiThanhToan === 'Chưa thanh toán' && order.trangThaiVanHanh === 'Đang giao hàng' && (
+          <button
+            onClick={onUpdatePaymentStatus}
+            disabled={processing}
+            className="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+          >
+            Đánh dấu đã thanh toán
+          </button>
+        )}
+
         {(order.trangThaiVanHanh === 'Đang chờ' || order.trangThaiVanHanh === 'Chờ hàng') && (
           <button
             onClick={() => setShowConfirmDialog(true)}
@@ -60,7 +72,7 @@ const OrderActions = ({
           </button>
         )}
 
-        {order.trangThaiVanHanh === 'Đã xác nhận' && (
+        {/* {order.trangThaiVanHanh === 'Đã xác nhận' && (
           <button
             onClick={() => setShowShipDialog(true)}
             disabled={processing}
@@ -68,7 +80,7 @@ const OrderActions = ({
           >
             Gửi hàng
           </button>
-        )}
+        )} */}
 
         {(order.trangThaiVanHanh === 'Đã xác nhận' || order.trangThaiVanHanh === 'Đang giao hàng') && (
           <button

@@ -51,7 +51,8 @@ const AdminOrderDetailPage = () => {
     handleCancelOrder,
     handleMoveToPending,
     handleUpdateRecipient,
-    handlePaymentCollected
+    handlePaymentCollected,
+    handleUpdatePaymentStatus
   } = useOrderDetail();
 
   if (loading) {
@@ -115,6 +116,7 @@ const AdminOrderDetailPage = () => {
             onCancelOrder={handleCancelOrder}
             onUpdateRecipient={handleUpdateRecipient}
             onPaymentCollected={handlePaymentCollected}
+            onUpdatePaymentStatus={handleUpdatePaymentStatus}
             setShowConfirmDialog={setShowConfirmDialog}
             setShowShipDialog={setShowShipDialog}
             setShowTrackingDialog={setShowTrackingDialog}

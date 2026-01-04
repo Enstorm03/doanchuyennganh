@@ -102,6 +102,16 @@ class OrderApi extends BaseApi {
     }
   }
 
+  // Cập nhật trạng thái thanh toán (Admin)
+  async updatePaymentStatus(orderId, daThanhToan = true) {
+    try {
+      return await this._fetch(`${API_BASE_URL}/don-hang/${orderId}/thanh-toan?daThanhToan=${daThanhToan}`, { method: 'POST', body: JSON.stringify({}) });
+    } catch (error) {
+      console.error('Lỗi cập nhật trạng thái thanh toán:', error);
+      throw error;
+    }
+  }
+
   // Chuyển sang trạng thái "Đang chờ" (Admin)
   async moveToPending(orderId) {
     try {

@@ -40,6 +40,7 @@ const api = {
   updateTracking: orderApi.updateTracking.bind(orderApi),
   updateOrderRecipient: orderApi.updateOrderRecipient.bind(orderApi),
   markPaymentCollected: orderApi.markPaymentCollected.bind(orderApi),
+  updatePaymentStatus: orderApi.updatePaymentStatus.bind(orderApi),
   moveToPending: orderApi.moveToPending.bind(orderApi),
   completeOrder: orderApi.completeOrder.bind(orderApi),
   searchOrdersByTracking: orderApi.searchOrdersByTracking.bind(orderApi),

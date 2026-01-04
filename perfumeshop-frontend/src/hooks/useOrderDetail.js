@@ -223,6 +223,19 @@ const useOrderDetail = () => {
     }
   };
 
+  const handleUpdatePaymentStatus = async () => {
+    try {
+      setProcessing(true);
+      const updatedOrder = await api.updatePaymentStatus(parseInt(orderId), true);
+      setOrder(updatedOrder);
+      alert('Đã cập nhật trạng thái thanh toán thành công!');
+    } catch (error) {
+      alert('Không thể cập nhật trạng thái thanh toán: ' + error.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return {
     order,
     loading,
@@ -260,7 +273,8 @@ const useOrderDetail = () => {
     handleCancelOrder,
     handleMoveToPending,
     handleUpdateRecipient,
-    handlePaymentCollected
+    handlePaymentCollected,
+    handleUpdatePaymentStatus
   };
 };
 
