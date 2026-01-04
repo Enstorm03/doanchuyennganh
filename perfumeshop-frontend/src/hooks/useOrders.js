@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const useOrders = () => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,7 +16,18 @@ const useOrders = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await api.getOrders(statusFilter === 'All' ? null : statusFilter);
+
+      // For user order history, use getUserOrdersHistoryDto with user ID
+      // For admin, use getOrders (all orders)
+      let data;
+      if (user && user.id_nguoi_dung) {
+        // User is logged in, fetch their order history
+        data = await api.getUserOrdersHistoryDto(user.id_nguoi_dung, statusFilter === 'All' ? null : statusFilter);
+      } else {
+        // Fallback to admin endpoint (shouldn't happen in user context)
+        data = await api.getOrders(statusFilter === 'All' ? null : statusFilter);
+      }
+
       console.log('Orders data received:', data);
 
       // Ensure data is an array and handle different response formats
@@ -34,7 +47,7 @@ const useOrders = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, user]);
 
   // Fetch orders on component mount and when filter changes
   useEffect(() => {
