@@ -96,6 +96,26 @@ public class CheckoutService {
     private DonHangService donHangService;
 
     @Transactional
+    public DonHang updatePaymentStatus(Integer donHangId, boolean isPaid) {
+        System.out.println("Updating payment status for order: " + donHangId + " to paid: " + isPaid);
+
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> {
+                    System.err.println("Order not found: " + donHangId);
+                    return new BusinessException("Đơn hàng không tồn tại");
+                });
+
+        String newStatus = isPaid ? "Đã thanh toán" : "Chưa thanh toán";
+        System.out.println("Changing payment status from " + donHang.getTrangThaiThanhToan() + " to " + newStatus);
+
+        donHang.setTrangThaiThanhToan(newStatus);
+        DonHang saved = donHangRepository.save(donHang);
+
+        System.out.println("Payment status updated successfully");
+        return saved;
+    }
+
+    @Transactional
     public DonHang cancelByCustomer(Integer donHangId, String lyDo) {
         return donHangService.cancel(donHangId, lyDo);
     }

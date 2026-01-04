@@ -25,4 +25,14 @@ public class DatHangController {
     public ResponseEntity<DonHang> cancelByCustomer(@PathVariable Integer id, @RequestParam("lyDo") String lyDo) {
         return ResponseEntity.ok(checkoutService.cancelByCustomer(id, lyDo));
     }
+
+    @PostMapping("/don-hang/{id}/thanh-toan")
+    public ResponseEntity<DonHang> updatePaymentStatus(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "true") boolean daThanhToan) {
+
+        DonHang updatedOrder = checkoutService.updatePaymentStatus(id, daThanhToan);
+        return ResponseEntity.ok(updatedOrder);
+    }
+
 }
