@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import useCheckoutData from '../../../hooks/useCheckoutData';
 import useShippingForm from '../../../hooks/useShippingForm';
 import usePaymentMethod from '../../../hooks/usePaymentMethod';
 import useSubmitOrder from '../../../hooks/useSubmitOrder';
+import api from '../../../services/api';
 import CheckoutHeader from './components/CheckoutHeader';
 import PreOrderNotice from './components/preorder/PreOrderNotice';
 import ShippingForm from './components/shipping/ShippingForm';
@@ -27,8 +28,57 @@ const ThanhToanPage = () => {
   const { paymentMethod, setPaymentMethod } = usePaymentMethod(preOrderData?.paymentMethod || 'cod');
   const { submitOrder, processing } = useSubmitOrder();
 
+  const [stockCheck, setStockCheck] = useState(null);
+
+  // Check stock when component mounts or items change
+  useEffect(() => {
+    const checkStock = async () => {
+      if (!user || isPreOrder || !items.length) return;
+
+      try {
+        // Get cart data to check stock locally
+        const cartData = await api.getCart(user.id_nguoi_dung);
+        const cartItems = cartData.chiTiet || [];
+
+        // Check stock for each item by getting product details
+        const outOfStockItems = [];
+        let allInStock = true;
+
+        for (const item of cartItems) {
+          try {
+            const product = await api.getProductById(item.sanPhamId);
+            if (product.so_luong_ton_kho < item.soLuong) {
+              allInStock = false;
+              outOfStockItems.push({
+                tenSanPham: product.ten_san_pham,
+                soLuongConLai: product.so_luong_ton_kho
+              });
+            }
+          } catch (error) {
+            console.error('Error checking product stock:', item.sanPhamId, error);
+          }
+        }
+
+        setStockCheck({
+          isAllInStock: allInStock,
+          outOfStockItems: outOfStockItems
+        });
+      } catch (error) {
+        console.error('Lỗi kiểm tra tồn kho:', error);
+        // Set default state if stock check fails
+        setStockCheck({ isAllInStock: true, outOfStockItems: [] });
+      }
+    };
+
+    checkStock();
+  }, [user, isPreOrder, items]);
+
   const handleSubmitOrder = () => {
-    submitOrder({ cart, preOrderData, isPreOrder }, shippingInfo, paymentMethod);
+    submitOrder({ cart, preOrderData, isPreOrder, stockCheck }, shippingInfo, paymentMethod);
+  };
+
+  const handleSubmitBackorder = () => {
+    submitOrder({ cart, preOrderData, isPreOrder, isBackorder: true, stockCheck }, shippingInfo, paymentMethod);
   };
 
   if (!user) {
@@ -116,6 +166,8 @@ const ThanhToanPage = () => {
               paymentMethod={paymentMethod}
               processing={processing}
               onSubmitOrder={handleSubmitOrder}
+              stockCheck={stockCheck}
+              onSubmitBackorder={handleSubmitBackorder}
             />
           </div>
         </div>

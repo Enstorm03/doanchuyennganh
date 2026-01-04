@@ -51,7 +51,7 @@ const QuickActions = () => {
         </Link>
 
         <Link
-          to="/pos"
+          to="/admin/pos"
           className="flex items-center gap-3 p-4 border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         >
           <span className="material-symbols-outlined text-orange-600">point_of_sale</span>

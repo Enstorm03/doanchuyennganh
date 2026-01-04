@@ -38,6 +38,13 @@ const LichSuDonHangPage = () => {
   const [returningOrder, setReturningOrder] = useState(null);
   const [returnData, setReturnData] = useState({ lyDo: '' });
 
+  // Handle order updates (for payment status changes)
+  const handleOrderUpdate = (updatedOrder) => {
+    // Since we can't directly update the orders state from useOrders hook,
+    // we'll just refetch the orders
+    fetchOrders();
+  };
+
   // Event handlers
   const handleWriteReview = (order) => {
     setReviewingOrder(order);
@@ -135,6 +142,7 @@ const LichSuDonHangPage = () => {
             onCancelOrder={handleCancelOrder}
             onWriteReview={handleWriteReview}
             onRequestReturn={handleRequestReturn}
+            onOrderUpdate={handleOrderUpdate}
           />
         )}
       </div>

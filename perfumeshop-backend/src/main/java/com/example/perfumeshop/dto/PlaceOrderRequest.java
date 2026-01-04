@@ -19,4 +19,8 @@ public class PlaceOrderRequest {
 
     @NotEmpty
     private List<PlaceOrderItemRequest> items;
+    private Boolean allowBackorder;
+
+
+
 }

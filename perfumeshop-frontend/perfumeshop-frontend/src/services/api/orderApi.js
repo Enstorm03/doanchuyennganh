@@ -4,7 +4,13 @@ class OrderApi extends BaseApi {
   // Đặt hàng
   async placeOrder(orderData) {
     try {
-      return await this._fetch(`${API_BASE_URL}/dat-hang`, { method: 'POST', body: JSON.stringify(orderData) });
+      // Ensure allowBackorder flag is included if not present
+      const payload = { ...orderData, allowBackorder: orderData.allowBackorder || false };
+
+      return await this._fetch(`${API_BASE_URL}/dat-hang`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
     } catch (error) {
       console.error('Lỗi đặt hàng:', error);
       throw error;

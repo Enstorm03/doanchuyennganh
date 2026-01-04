@@ -79,6 +79,19 @@ class CartApi extends BaseApi {
     }
   }
 
+  // Kiểm tra tồn kho trước khi thanh toán
+  async checkStockBeforeCheckout(cartItems) {
+    try {
+      return await this._fetch(`${API_BASE_URL}/cart/check-stock`, {
+        method: 'POST',
+        body: JSON.stringify({ items: cartItems })
+      });
+    } catch (error) {
+      console.error('Lỗi kiểm tra tồn kho:', error);
+      throw error;
+    }
+  }
+
   // Thanh toán giỏ hàng
   async checkoutCart(request) {
     try {
@@ -92,11 +105,15 @@ class CartApi extends BaseApi {
         soDienThoai: request.soDienThoai || '',
         ghiChu: request.ghiChu || '',
         phuongThucThanhToan: request.phuongThucThanhToan || 'cod',
+        allowBackorder: request.allowBackorder || false, // Add backorder flag
         items: cartData.chiTiet.map(({ sanPhamId, soLuong, giaTaiThoiDiemMua }) =>
           ({ sanPhamId, soLuong, giaTaiThoiDiemMua }))
       };
 
-      return await this._fetch(`${API_BASE_URL}/dat-hang`, { method: 'POST', body: JSON.stringify(orderData) });
+      return await this._fetch(`${API_BASE_URL}/dat-hang`, {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      });
     } catch (error) {
       console.error('Lỗi thanh toán giỏ hàng:', error);
       throw error;

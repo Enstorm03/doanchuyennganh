@@ -15,6 +15,37 @@ const useSubmitOrder = () => {
     try {
       setProcessing(true);
 
+      if (checkoutData.isPreOrder) {
+        // Pre-order items are handled in the preOrderPayload below
+      } else {
+        // Regular cart checkout - cart data is fetched in checkoutCart method
+      }
+
+      // Check if this is explicitly a backorder request
+      const isBackorder = checkoutData.isBackorder || false;
+
+      let stockCheck = { isAllInStock: true, outOfStockItems: [] };
+
+      // Stock checking is now done in ThanhToanPage component
+      // and passed via checkoutData.stockCheck
+      if (checkoutData.stockCheck) {
+        stockCheck = checkoutData.stockCheck;
+      }
+
+      // Only show confirmation dialog if not explicitly a backorder
+      if (!isBackorder && stockCheck && !stockCheck.isAllInStock) {
+        // Show confirmation dialog for out-of-stock items
+        const confirmOrder = window.confirm(
+          `Một số sản phẩm đã hết hàng:\n\n` +
+          `${stockCheck.outOfStockItems.map(item =>
+            `- ${item.tenSanPham} (Còn lại: ${item.soLuongConLai})`
+          ).join('\n')}\n\n` +
+          `Bạn có muốn đặt hàng trước không? Chúng tôi sẽ liên hệ khi có hàng.`
+        );
+
+        if (!confirmOrder) return;
+      }
+
       let result;
 
       if (checkoutData.isPreOrder) {
@@ -26,6 +57,7 @@ const useSubmitOrder = () => {
           soDienThoai: shippingInfo.soDienThoai.trim(),
           ghiChu: checkoutData.preOrderData.ghiChu || shippingInfo.ghiChu.trim(),
           phuongThucThanhToan: paymentMethod,
+          allowBackorder: isBackorder ? "true" : "false", // Add backorder flag as string
           items: checkoutData.preOrderData.items.map(item => ({
             sanPhamId: item.id_san_pham,
             soLuong: item.quantity,
@@ -48,16 +80,24 @@ const useSubmitOrder = () => {
           diaChiGiaoHang: shippingInfo.diaChiGiaoHang.trim(),
           soDienThoai: shippingInfo.soDienThoai.trim(),
           ghiChu: shippingInfo.ghiChu.trim(),
-          phuongThucThanhToan: paymentMethod
+          phuongThucThanhToan: paymentMethod,
+          allowBackorder: isBackorder ? "true" : "false" // Add backorder flag for regular orders too
         };
 
         console.log('Order data to send:', orderData);
+        console.log('isBackorder:', isBackorder);
+        console.log('allowBackorder flag:', orderData.allowBackorder);
 
         result = await api.checkoutCart(orderData);
       }
 
-      // Redirect to order success page or show success message
-      alert('Đặt hàng thành công! Mã đơn hàng: ' + result.idDonHang);
+      // Show success message based on order status
+      if (result.trangThaiVanHanh === 'Chờ hàng') {
+        alert('Đặt hàng thành công! Đơn hàng của bạn đang chờ nhập thêm hàng. Chúng tôi sẽ liên hệ sớm nhất.');
+      } else {
+        alert('Đặt hàng thành công! Mã đơn hàng: ' + result.idDonHang);
+      }
+
       navigate('/lich-su-don-hang');
 
     } catch (error) {
@@ -74,5 +114,3 @@ const useSubmitOrder = () => {
 };
 
 export default useSubmitOrder;
-
-

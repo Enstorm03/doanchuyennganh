@@ -67,7 +67,8 @@ const useChiTietSanPham = (productId) => {
       return;
     }
 
-    if (quantity > product.so_luong_ton_kho) {
+    // Only check stock for regular cart actions, not for pre-orders
+    if (actionType !== 'pre_order' && quantity > product.so_luong_ton_kho) {
       alert('Số lượng vượt quá tồn kho');
       return;
     }

@@ -6,8 +6,8 @@ const OrderProductItem = ({ item, productDetails, brandDetails }) => {
   let quantity = 0;
   let price = 0;
 
-  if (item.tenSanPham) {
-    // Direct product info in chiTiet
+  if (item.tenSanPham && (item.tenThuongHieu || item.thuongHieu) && item.dungTichMl && item.nongDo) {
+    // Direct product info in chiTiet (if all detailed fields exist)
     productInfo = {
       tenSanPham: item.tenSanPham,
       urlHinhAnh: item.urlHinhAnh,
@@ -26,6 +26,10 @@ const OrderProductItem = ({ item, productDetails, brandDetails }) => {
 
     // Get detailed product info from fetched products
     const detailedProduct = productDetails[item.sanPhamId];
+    console.log('OrderProductItem - item.sanPhamId:', item.sanPhamId);
+    console.log('OrderProductItem - detailedProduct:', detailedProduct);
+    console.log('OrderProductItem - productDetails keys:', Object.keys(productDetails));
+    console.log('OrderProductItem - brandDetails:', brandDetails);
 
     productInfo = {
       ...basicInfo,
@@ -33,6 +37,8 @@ const OrderProductItem = ({ item, productDetails, brandDetails }) => {
       dungTichMl: detailedProduct?.dung_tich_ml || detailedProduct?.dungTichMl,
       nongDo: detailedProduct?.nong_do || detailedProduct?.nongDo
     };
+
+    console.log('OrderProductItem - final productInfo:', productInfo);
 
     quantity = item.soLuong;
     price = item.giaTaiThoiDiemMua;

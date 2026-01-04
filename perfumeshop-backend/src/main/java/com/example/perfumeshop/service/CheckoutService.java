@@ -34,13 +34,19 @@ public class CheckoutService {
         }
 
         boolean allInStock = true;
-        for (PlaceOrderItemRequest it : req.getItems()) {
-            SanPham sp = sanPhamRepository.findById(it.getSanPhamId())
-                    .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại: " + it.getSanPhamId()));
-            int ton = sp.getSoLuongTonKho() == null ? 0 : sp.getSoLuongTonKho();
-            if (ton < it.getSoLuong()) {
-                allInStock = false;
-                break;
+        // Nếu cho phép đặt hàng backorder thì bỏ qua kiểm tra tồn kho
+        if (Boolean.TRUE.equals(req.getAllowBackorder())) {
+            allInStock = false; // Mặc định xử lý như hết hàng để vào luồng chờ hàng
+        } else {
+            // Chỉ kiểm tra tồn kho nếu không phải là đơn backorder
+            for (PlaceOrderItemRequest it : req.getItems()) {
+                SanPham sp = sanPhamRepository.findById(it.getSanPhamId())
+                        .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại: " + it.getSanPhamId()));
+                int ton = sp.getSoLuongTonKho() == null ? 0 : sp.getSoLuongTonKho();
+                if (ton < it.getSoLuong()) {
+                    allInStock = false;
+                    break;
+                }
             }
         }
 
@@ -82,10 +88,15 @@ public class CheckoutService {
             }
             dh.setTienDatCoc(BigDecimal.ZERO);
         } else {
-            // Hàng order: Chờ hàng, Chờ cọc, cọc = 50%, không trừ kho
+            // Hàng order/backorder: Chờ hàng, Chờ cọc, cọc = 50%, không trừ kho
             dh.setTrangThaiVanHanh(DonHangService.TT_CHO_HANG);
             dh.setTrangThaiThanhToan("Chờ cọc");
             dh.setTienDatCoc(tong.multiply(new BigDecimal("0.5")));
+            
+            // Nếu là đơn backorder, lưu thông tin vào lý do
+            if (Boolean.TRUE.equals(req.getAllowBackorder())) {
+                dh.setLyDoHuy("Đơn hàng đặt trước (backorder)");
+            }
         }
 
         return donHangRepository.save(dh);

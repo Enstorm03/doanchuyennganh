@@ -27,6 +27,7 @@ const api = {
   removeCartItem: cartApi.removeCartItem.bind(cartApi),
   clearCart: cartApi.clearCart.bind(cartApi),
   updateCartItem: cartApi.updateCartItem.bind(cartApi),
+  checkStockBeforeCheckout: cartApi.checkStockBeforeCheckout.bind(cartApi),
   checkoutCart: cartApi.checkoutCart.bind(cartApi),
 
   // Order methods
